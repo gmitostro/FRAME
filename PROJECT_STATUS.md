@@ -52,6 +52,7 @@ Atualizado em 24/11/2026 · versão 0.2.0
   - tolerância de RIR e modelo de duração;
   - backup, restauração e estado do armazenamento.
 - PWA: manifest, ícones, service worker com cache offline e aviso de nova versão.
+- Publicado em https://gmitostro.github.io/FRAME/ pelo GitHub Pages; cada push em `main` roda lint, testes e build antes de publicar.
 
 ## Pendente
 
@@ -59,7 +60,7 @@ Atualizado em 24/11/2026 · versão 0.2.0
 - Gráficos de progressão, volume semanal por músculo (direto e indireto), consistência e duração real versus estimada.
 - Calibrar o modelo de duração com as sessões reais.
 - Métodos avançados, check-in de recuperação, coach adaptativo, notificações, interface do Evidence Lab e registro de decisões no app.
-- Publicação HTTPS (precisa da sua autorização e de uma conta) e testes no iPhone real.
+- Testes no iPhone real (instalação, cronômetro, som, tela ligada).
 
 ## Problemas conhecidos
 
