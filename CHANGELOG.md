@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 · 24/11/2026
+
+### Fixed
+- Exercise picker: the muscle filter chips collapsed inside the bottom sheet (flex shrink).
+- Rest timer: the "rest done" label was cut by the buttons; it now reads "Concluído".
+
 ## 0.2.0 · 24/11/2026
 
 ### Added

@@ -47,7 +47,7 @@ export function RestTimerDock({ timer, settings, onAction }: Props) {
         </div>
         <div className="timer-main">
           <div className="grow" style={{ minWidth: 0 }}>
-            <div className="timer-label">{paused ? t('timer.paused') : done ? t('timer.restDone') : t('timer.rest')}</div>
+            <div className="timer-label">{paused ? t('timer.paused') : done ? t('timer.restDoneShort') : t('timer.rest')}</div>
             <div className="timer-time" aria-label={t('timer.rest')}>
               {done ? t('timer.overrun', { time: formatClock(-remaining) }) : formatClock(remaining)}
             </div>

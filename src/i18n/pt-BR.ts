@@ -193,6 +193,7 @@ export const ptBR = {
   timer: {
     rest: 'Descanso',
     restDone: 'Descanso concluído',
+    restDoneShort: 'Concluído',
     overrun: '+{time}',
     paused: 'Pausado',
     pause: 'Pausar descanso',
