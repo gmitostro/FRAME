@@ -1,0 +1,110 @@
+# Architecture
+
+## Stack
+
+| Concern | Choice | Why |
+|---|---|---|
+| UI | React 19 + TypeScript 7 (strict) | Requested stack; typed models end to end |
+| Build | Vite 8 | Fast, simple config |
+| Storage | IndexedDB via Dexie 4 (+ dexie-react-hooks) | Versioned schema with upgrade hooks, indexes, transactions, live queries; ~30 KB gz |
+| State | IndexedDB is the source of truth; `useLiveQuery` re-renders on change | No separate state store to keep in sync; every action is persisted immediately |
+| Routing | React Router 7, hash router | Works on any static host or sub-path without rewrites |
+| PWA | vite-plugin-pwa (Workbox `generateSW`, `registerType: 'prompt'`) | Precache for offline use; updates wait for the user ("Atualizar") so a workout is never reloaded mid-set |
+| Icons | lucide-react (tree-shaken) | Consistent line icons |
+| Styling | Plain CSS with design tokens (`src/styles/tokens.css`) | No runtime cost, easy theming |
+| Tests | Vitest + fake-indexeddb; Playwright script for e2e | Logic and persistence tested without a browser; real interaction tested in Chromium |
+| Lint | oxlint (Vite template default) | Fast; includes React hooks rules |
+
+No backend, no analytics, no paid APIs.
+
+## Layout
+
+```
+src/
+  domain/      pure training logic, no React, no storage
+    types.ts         data model
+    defaults.ts      default settings (rest profiles, duration model)
+    timer.ts         rest timer maths (timestamps only)
+    progression.ts   double progression engine
+    duration.ts      session duration estimate
+    session.ts       live-workout state transitions (pure)
+    records.ts       recorded personal records
+    week.ts          calendar helpers (Monday-first weeks)
+  data/        the only code that touches IndexedDB
+    db.ts            Dexie schema, versions, seeding, persistent storage
+    repo.ts          repository functions (settings, exercises, templates, sessions)
+    backup.ts        export / validate / restore
+    seed/            exercise library and empty FRFB skeleton
+  i18n/        pt-BR dictionary + typed t() + pt-BR formatters
+  components/  shared UI (Sheet, Stepper, Switch, Toast, PageHeader, ErrorBoundary)
+  features/    screens: home, program, workout, exercises, history, settings
+  app/         App shell, router, data hooks
+  lib/         id generation, sound/vibration/wake lock, file download
+tests/         unit and persistence tests
+e2e/           Playwright smoke test
+```
+
+Training rules live in `src/domain`. UI components call them and never hold rules of their own.
+
+## Data flow
+
+1. A screen reads data with `useLiveQuery` (via `app/hooks.ts`).
+2. A user action calls a repository function. Live-workout actions go through `mutateSession(id, fn)`, which reads, applies a pure function from `domain/session.ts`, and writes inside one IndexedDB transaction. Two quick taps cannot overwrite each other.
+3. Dexie notifies live queries and the screen re-renders.
+
+## Data model (summary)
+
+- `Exercise`: pt-BR/EN names, primary/secondary muscles, equipment, movement pattern, category, rest profile, smallest load step, lower-body flag, notes, `isCustom`.
+- `Program` and `WorkoutTemplate`: name, weekday (0 = Sunday), order, notes. Each `TemplateExercise` holds working sets, warm-up sets, rep range, RIR target and a rest override.
+- `WorkoutSession`: status (`active` | `completed` | `discarded`), start/end, pause bookkeeping, current exercise, `restTimer`, and `exercises[]`. Each entry stores a **snapshot** of the name and prescription, its status and its `SetLog[]`. Editing or deleting a template never changes history. `exerciseIds` is a multi-entry index for exercise history queries.
+- `SetLog`: kind (`warmup` | `working`), load, reps, RIR, technique flag, timestamp, actual rest before the set.
+- `Settings`: singleton.
+
+## Rest timer
+
+The state is `{ startedAt, durationMs, pausedAt, pausedMs }`. Remaining time is always computed as `duration − (now − startedAt − pausedMs)`. It is never a decrementing counter, so it stays correct after backgrounding, screen lock or reload. The UI ticks every 250 ms and also on `visibilitychange`/`focus`. The end alert plays only if the end is seen live (within 5 s), so a returning user is not surprised by a late beep.
+
+**iOS limitation:** an installed PWA's JavaScript is suspended in the background. The remaining time is correct on return, but no sound or alert can fire while the app is closed. Background alerts need Web Push with a server (Phase 9).
+
+## Storage, migrations and backup
+
+- Schema version 1 lives in `db.ts`. Every change adds `db.version(n).stores(...).upgrade(...)` and never edits an old version.
+- The library seed has its own version (`meta.exerciseSeedVersion`). New built-in exercises are added on startup without touching ones the user edited.
+- `navigator.storage.persist()` is requested at startup and when a workout starts.
+- **Backup format** (`frame-backup`, version 1):
+
+  ```json
+  { "format": "frame-backup", "version": 1, "app": "FRAME", "exportedAt": "ISO date",
+    "data": { "exercises": [], "programs": [], "templates": [], "sessions": [], "settings": [], "meta": [] } }
+  ```
+
+  Restore validates the format, the version (it rejects newer versions) and every record's shape before touching the database, then replaces all tables in one transaction. A failed restore changes nothing.
+
+## Program files ("fichas")
+
+Programs without history are moved around as `frame-program` JSON (`src/data/program.ts`):
+
+```json
+{ "format": "frame-program", "version": 1, "name": "FRFB V1",
+  "customExercises": [ { "id": "...", "namePt": "...", "primaryMuscle": "lats", "...": "..." } ],
+  "workouts": [ { "name": "Frame A", "weekday": 1, "notes": "...",
+    "exercises": [ { "exerciseId": "puxada-neutra", "workingSets": 3, "warmupSets": 2, "repMin": 6, "repMax": 8, "rirTarget": 2, "restSec": 180, "notes": "..." } ] } ] }
+```
+
+`weekday` uses 0 = Sunday … 6 = Saturday, or null. `exerciseId` must be a library id or a `customExercises` id. Validation runs before anything is written. Applying a file replaces the active program's workouts in one transaction and leaves sessions alone. The FRFB V1 file is bundled (`src/data/seed/frfb-v1.ts`) and seeds the first run.
+
+## Deployment
+
+`.github/workflows/deploy.yml` runs on every push to `main`: `npm ci`, lint, unit tests, build, then publishes `dist/` to GitHub Pages at `https://gmitostro.github.io/FRAME/`.
+
+## Dependencies
+
+Runtime: react, react-dom, react-router-dom, dexie, dexie-react-hooks, lucide-react.
+Dev: vite, @vitejs/plugin-react, vite-plugin-pwa, typescript, oxlint, vitest, fake-indexeddb, jsdom. Playwright is preinstalled in the environment and is not a project dependency.
+
+## Technical limitations
+
+- No iPhone/WebKit testing yet (Chromium emulation only).
+- Background notifications and alarms are not possible without push infrastructure.
+- Vibration API absent on iOS Safari; Wake Lock support depends on iOS version.
+- No sync between devices. The backup file is the only way to move data.
