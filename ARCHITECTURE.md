@@ -62,9 +62,41 @@ Training rules live in `src/domain`. UI components call them and never hold rule
 
 ## Rest timer
 
-The state is `{ startedAt, durationMs, pausedAt, pausedMs }`. Remaining time is always computed as `duration − (now − startedAt − pausedMs)`. It is never a decrementing counter, so it stays correct after backgrounding, screen lock or reload. The UI ticks every 250 ms and also on `visibilitychange`/`focus`. The end alert plays only if the end is seen live (within 5 s), so a returning user is not surprised by a late beep.
+**State** (`domain/timer.ts`, stored in the active session):
+- `{ startedAt, durationMs, baseDurationMs, pausedAt, pausedMs, alerted }`.
+- Remaining time is always `duration − (now − startedAt − pausedMs)`. It is never a decrementing counter, so it is correct after backgrounding, screen lock or reload.
+- +15/+30 s after the end count from "now". Restart returns to `baseDurationMs` (the prescribed rest) and drops extensions.
 
-**iOS limitation:** an installed PWA's JavaScript is suspended in the background. The remaining time is correct on return, but no sound or alert can fire while the app is closed. Background alerts need Web Push with a server (Phase 9).
+**Display** (`features/workout/RestTimerDock.tsx`):
+- Ticks every 250 ms only to refresh the digits, and recomputes on `visibilitychange`/`focus`.
+- Display and controls only; it holds no alert logic.
+
+**Alert, wake lock and audio** (`app/RestWatcher.tsx`, mounted once at the app root):
+- Works on every screen. It schedules one `setTimeout` for the exact end time and re-checks when the app becomes visible.
+- An end seen within 5 s plays two tones (and vibrates where supported). A missed end never plays late: the screen shows the overrun.
+- Each alert marks only the timer instance that produced it.
+- The screen wake lock is held for the whole active workout and re-acquired when the app returns to the foreground.
+- Any tap revives the audio context (iOS needs a gesture and can leave it "interrupted").
+
+**Workout pause:**
+- Pausing the workout also pauses a running timer.
+- Resuming resumes only a timer that the workout pause paused; a timer the user paused stays paused.
+- Logging a set resumes a paused workout.
+- Recorded rest (`restBeforeSec`) excludes paused time, via `SetLog.pausedMsAt`.
+
+## iOS / PWA platform limits
+
+Verified in browsers, still to be confirmed on a physical iPhone:
+
+| Capability | iOS installed PWA | What FRAME does |
+|---|---|---|
+| JavaScript in background or with the screen locked | Suspended | Timers stop; time is recomputed from timestamps on return |
+| Sound at rest end while backgrounded or locked | Not possible from the page | No late beep; overrun shown on return |
+| Sound in foreground | Web Audio; needs a prior tap; muted by the silent switch | Unlocked on any tap; revived from "interrupted" |
+| Vibration API | Not available in Safari | Feature-detected; no effect on iPhone |
+| Screen Wake Lock | Available in recent iOS; behaviour in installed web apps has varied between iOS versions | Requested during the workout; must be checked on the device |
+| Scheduled local notifications | Not available (no Notification Triggers) | None |
+| Web Push (iOS 16.4+, installed app, permission) | Needs a push server to send the message | Not implemented. A server cannot time a rest alert reliably to the second, so it suits training reminders (Phase 9), not rest alarms |
 
 ## Storage, migrations and backup
 
@@ -105,6 +137,5 @@ Dev: vite, @vitejs/plugin-react, vite-plugin-pwa, typescript, oxlint, vitest, fa
 ## Technical limitations
 
 - No iPhone/WebKit testing yet (Chromium emulation only).
-- Background notifications and alarms are not possible without push infrastructure.
-- Vibration API absent on iOS Safari; Wake Lock support depends on iOS version.
+- Background alerts are not possible without push infrastructure; see "iOS / PWA platform limits".
 - No sync between devices. The backup file is the only way to move data.

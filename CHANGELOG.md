@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.2 · 25/11/2026
+
+### Fixed
+- Rest-end alert now fires on any screen. Before, it only fired on the workout screen, and returning dropped it silently.
+- Screen wake lock is kept for the whole workout instead of being released when leaving the workout screen.
+- Resuming a paused workout no longer resumes a rest timer the user had paused.
+- Logging a set while the workout is paused resumes the workout.
+- Recorded rest between sets excludes time the workout was paused.
+- "Reiniciar" returns to the prescribed rest instead of keeping +15/+30 s extensions.
+- Audio is revived from the iOS "interrupted" state on the next tap.
+- Changing exercise opens the next one at the top.
+- Automatic scroll moves the screen only when the timer or footer would cover the button, measured from the real layout. Before, it used a fixed 150 px margin.
+
+### Changed
+- Live workout order: name, prescription, compact suggestion with last performance, set logger (set pills in its header, button "Concluir série N"), note (two lines, tap to open), logged sets, actions.
+- The top-bar clock re-renders only itself, no longer the whole workout screen every second.
+- Workout summary adds records of the day (recorded values only), the duration estimate and skipped exercises.
+- `npm run e2e` runs three suites (smoke, timer, layout).
+
 ## 0.2.1 · 24/11/2026
 
 ### Fixed

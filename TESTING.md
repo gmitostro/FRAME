@@ -18,15 +18,16 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` needs a build first. Run it as `SHOTS=1 npm run e2e` to save screenshots to `e2e/shots/`.
+`npm run e2e` needs a build first. It runs three suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability) and `e2e/layout.cjs` (four screen sizes and the summary). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 36 tests)
+## Unit and persistence tests (Vitest, 47 tests)
 
 | File | Covers |
 |---|---|
-| `tests/timer.test.ts` | Remaining time from timestamps, long background gaps, pause/resume, double pause, +15/+30 s including after overrun, restart |
+| `tests/timer.test.ts` | Remaining time from timestamps, long background gaps, pause/resume, double pause, +15/+30 s including after overrun, restart (back to the prescribed rest) |
 | `tests/progression.test.ts` | Every double-progression branch, RIR tolerance, technique flag, incomplete sets, reps below range, step size by body region and equipment, step above 10% |
 | `tests/duration.test.ts` | Empty workout, breakdown (work, rest, warm-ups, transition), rest override clamped to minimum, ±5 min target band |
+| `tests/session.test.ts` | Workout pause vs. a manually paused timer, logging a set while paused, recorded rest excluding pauses and legacy sets, set edit and delete (timer cleared), records of the day |
 | `tests/prefill.test.ts` | Warm-up vs working order, history warm-ups, suggested load, repeat of the session's last set, no-history fallback |
 | `tests/program.test.ts` | FRFB V1 validates against the library, weekly direct sets match the ficha's summary, estimated durations, invalid ficha rejection, import replaces workouts without touching history, export/import round-trip with custom exercises |
 | `tests/data.test.ts` | Database seed (library, FRFB V1, settings), seed sync preserving user edits, template editing with clamping, live-session persistence across a new DB connection (reload), a second active session blocked, history snapshot unaffected by template edits, substitution in place and after logged sets, pause excluded from workout time and rest, backup round-trip and rejection of invalid/newer files |
@@ -57,6 +58,52 @@ The test runs Chromium emulating an iPhone 13 (390×844, touch) against the prod
 18. No English UI strings appear on the five main screens (heuristic).
 19. There are no console errors.
 
+## Rest timer e2e (`e2e/timer.cjs`)
+
+Chromium, iPhone 13 viewport, Playwright-controlled clock. Web Audio and Wake Lock are instrumented to count alert attempts and lock requests; this proves the app *tries*, not that a phone played a sound.
+
+1. Wake lock kept when leaving the workout screen.
+2. Rest-end alert fires while the Home tab is open; banner shows the overrun.
+3. No repeated alert when returning to the workout.
+4. +30 s after the end counts from now and alerts again.
+5. Restart returns to 2:00; 5 min paused without change; resume continues.
+6. A timer paused by the user stays paused when the workout is resumed.
+7. A 10-minute clock jump (JavaScript not running, as when the phone is locked): overrun computed from timestamps, no late beep.
+8. Reload during rest keeps the remaining time.
+9. Finishing the workout releases the wake lock.
+10. No console errors.
+
+## Layout e2e (`e2e/layout.cjs`)
+
+On iPhone SE (375×667), 13 mini (375×812), 13 (390×844) and Pro Max (430×932), the test uses the tallest case: suggestion, note and warm-ups. It checks:
+- the "Concluir" button is visible on open, after warm-ups and with the timer showing;
+- the exercise name is visible on open;
+- on screens 800 px or taller, there is no automatic scroll;
+- the next exercise opens at the top.
+
+On the iPhone 13 it also checks the summary: record of the day, duration estimate and skipped exercises.
+
+Measured automatic scroll on iPhone SE (after warm-ups / with timer):
+
+| Version | After warm-ups | With timer |
+|---|---|---|
+| 0.2.1 | 296 px | 296 px |
+| 0.2.2 | 12 px | 94 px |
+
+On the mini, the 13 and the Pro Max it dropped from 151 px, 99 px and 0 px to 0 px.
+
+## Results, 25/11/2026 (v0.2.2)
+
+| Check | Result |
+|---|---|
+| TypeScript (`tsc -b`, strict) | Pass, 0 errors |
+| Lint (oxlint) | Pass, 0 errors; 2 warnings about dev-only fast refresh |
+| Unit and persistence | 47/47 pass |
+| Production build + service worker | Pass |
+| E2E smoke (19 checks) | Pass |
+| E2E rest timer (10 checks) | Pass |
+| E2E layout, 4 sizes (6 checks) | Pass |
+
 ## Results, 24/11/2026
 
 | Check | Result |
@@ -79,11 +126,11 @@ The test runs Chromium emulating an iPhone 13 (390×844, touch) against the prod
 | Area | Implemented | Browser (Chromium) | iPhone |
 |---|---|---|---|
 | Workout logging, persistence, reload | Yes | Tested | Not tested |
-| Rest timer (foreground) | Yes | Tested | Not tested |
-| Rest timer after background/lock | Yes (timestamps) | Logic unit-tested | Not tested |
-| End-of-rest sound | Yes | Not verifiable headless | Not tested |
+| Rest timer (foreground, any tab) | Yes | Tested (e2e, controlled clock) | Not tested |
+| Rest timer after background/lock | Yes (timestamps) | Simulated by a clock jump | Not tested |
+| End-of-rest sound | Yes | Attempt counted (instrumented); audio not heard | Not tested; silent switch mutes it |
 | Vibration | Yes (feature-detected) | n/a | Not supported by iOS Safari |
-| Keep screen on (Wake Lock) | Yes | Not verified | Not tested |
+| Keep screen on (Wake Lock) | Yes, whole workout | Requests/releases counted (instrumented) | Not tested |
 | Offline | Yes | Tested | Not tested |
 | PWA install | Manifest and icons | n/a | Needs HTTPS deployment |
 | Notifications | No | — | — |

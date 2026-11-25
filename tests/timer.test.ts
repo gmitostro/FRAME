@@ -42,6 +42,13 @@ describe('rest timer', () => {
     expect(T.remainingMs(ext, t0 + 70_000)).toBe(15_000)
   })
 
+  it('restart drops extensions and returns to the prescribed rest', () => {
+    let t = T.startTimer(t0, 120, 'ex', 'set')
+    t = T.extendTimer(t, t0 + 130_000, 30) // overrun 10 s, then +30 s
+    t = T.restartTimer(t, t0 + 140_000)
+    expect(T.remainingMs(t, t0 + 140_000)).toBe(120_000)
+  })
+
   it('restarts from now', () => {
     let t = T.startTimer(t0, 60, 'ex', 'set')
     t = T.restartTimer(t, t0 + 50_000)

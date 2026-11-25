@@ -45,6 +45,7 @@ export function useNow(intervalMs = 1000, enabled = true): number {
   useEffect(() => {
     if (!enabled) return
     const tick = () => setNow(Date.now())
+    tick() // fresh value as soon as (re)enabled, not one interval later
     const id = window.setInterval(tick, intervalMs)
     document.addEventListener('visibilitychange', tick)
     window.addEventListener('focus', tick)

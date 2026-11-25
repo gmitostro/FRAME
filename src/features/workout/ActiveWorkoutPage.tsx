@@ -15,7 +15,7 @@ import {
   TrendingUp,
   Undo2,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveSession, useExerciseMap, useNow, useSettings } from '../../app/hooks'
 import { ConfirmSheet, Sheet } from '../../components/Sheet'
@@ -23,8 +23,9 @@ import { useToast } from '../../components/Toast'
 import { lastPerformance, mutateSession } from '../../data/repo'
 import { suggestProgression, type ProgressionSuggestion } from '../../domain/progression'
 import * as S from '../../domain/session'
-import type { Exercise, SessionExercise, SetKind, SetLog, Settings, WorkoutSession } from '../../domain/types'
-import { acquireWakeLock, releaseWakeLock, unlockAudio } from '../../lib/feedback'
+import type { Exercise, Prescription, SessionExercise, SetKind, SetLog, Settings, WorkoutSession } from '../../domain/types'
+import { unlockAudio } from '../../lib/feedback'
+import { revealBetweenOverlays } from '../../lib/reveal'
 import { newId } from '../../lib/id'
 import { formatClock, formatKg, formatNumber, formatPct, formatRest, formatShortDate, t } from '../../i18n'
 import { ExercisePicker } from '../exercises/ExercisePicker'
@@ -60,7 +61,6 @@ export function ActiveWorkoutPage() {
 function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; settings: Settings; exMap: Map<string, Exercise> }) {
   const navigate = useNavigate()
   const toast = useToast()
-  const now = useNow(1000)
   const [sheet, setSheet] = useState<SheetName>(null)
   const [editing, setEditing] = useState<SetLog | null>(null)
   const [override, setOverride] = useState<{ exId: string; kind: SetKind } | null>(null)
@@ -85,17 +85,27 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
     [session.id, toast],
   )
 
-  // Keep the screen awake while training, where supported.
+  // A different exercise always opens at the top (name and prescription first).
+  const currentId = current?.id
   useEffect(() => {
-    if (!settings.keepScreenOn) return
-    void acquireWakeLock()
-    const onVis = () => document.visibilityState === 'visible' && void acquireWakeLock()
-    document.addEventListener('visibilitychange', onVis)
-    return () => {
-      document.removeEventListener('visibilitychange', onVis)
-      void releaseWakeLock()
-    }
-  }, [settings.keepScreenOn])
+    window.scrollTo(0, 0)
+  }, [currentId])
+
+  // After the user logs a set, keep the next action (next set's button or
+  // "next exercise") visible above the timer dock and footer. Measured, minimal,
+  // and only in response to the user's own action.
+  const revealRef = useRef(false)
+  const setCount = current?.sets.length ?? 0
+  const timerSetId = session.restTimer?.setId
+  useEffect(() => {
+    if (!revealRef.current) return
+    const id = requestAnimationFrame(() => {
+      revealRef.current = false
+      const target = document.querySelector('.logger-submit') ?? document.querySelector('.exercise-done .btn-primary')
+      if (target) revealBetweenOverlays(target)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [setCount, timerSetId])
 
   const kindOverride = override && override.exId === current?.id ? override.kind : null
   const setKindOverride = (kind: SetKind | null) => setOverride(kind && current ? { exId: current.id, kind } : null)
@@ -111,12 +121,15 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
           rirTolerance: settings.rirTolerance,
         })
 
-  const onTimerAction = useCallback((a: S.TimerAction) => void mutate((s, n) => S.applyTimerAction(s, a, n)), [mutate])
+  const onTimerAction = useCallback((a: S.TimerAction) => {
+    unlockAudio()
+    void mutate((s, n) => S.applyTimerAction(s, a, n))
+  }, [mutate])
 
   if (!current) {
     return (
       <div className="workout">
-        <TopBar session={session} now={now} onMenu={() => setSheet('menu')} onPause={() => mutate((s, n) => (s.pausedAt ? S.resumeSession(s, n) : S.pauseSession(s, n)))} />
+        <TopBar session={session} onMenu={() => setSheet('menu')} onPause={() => mutate((s, n) => (s.pausedAt ? S.resumeSession(s, n) : S.pauseSession(s, n)))} />
         <div className="empty">
           <p>{t('program.noExercises')}</p>
           <button className="btn btn-primary" onClick={() => setSheet('add')}>
@@ -138,11 +151,13 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
   const nextName = nextIdx !== null ? session.exercises[nextIdx]?.name : null
   const repRange = p.repMin === p.repMax ? `${p.repMin}` : `${p.repMin}–${p.repMax}`
   const loggerLabel = kind === 'warmup' ? `${t('workout.warmup')} ${warm.length + 1}` : t('workout.working', { n: working.length + 1 })
+  const submitLabel = kind === 'warmup' ? t('workout.completeWarmupN', { n: warm.length + 1 }) : t('workout.completeSetN', { n: working.length + 1 })
   // Wait for history so pre-filled values are right on first render.
   const showLogger = last !== undefined && current.status !== 'skipped' && (!complete || kindOverride !== null)
 
   async function logSet(v: { kind: SetKind; weightKg: number; reps: number; rir: number | null }) {
     unlockAudio()
+    revealRef.current = true
     await mutate((s, n) => S.addSet(s, index, v, n, newId, { warmupStartsTimer: settings.warmupStartsTimer }))
     setKindOverride(null)
   }
@@ -274,7 +289,7 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
 
   return (
     <div className={`workout ${session.restTimer ? 'has-timer' : ''}`}>
-      <TopBar session={session} now={now} onMenu={() => setSheet('menu')} onPause={() => mutate((s, n) => (s.pausedAt ? S.resumeSession(s, n) : S.pauseSession(s, n)))} />
+      <TopBar session={session} onMenu={() => setSheet('menu')} onPause={() => mutate((s, n) => (s.pausedAt ? S.resumeSession(s, n) : S.pauseSession(s, n)))} />
 
       <div className="wk-body">
         {session.pausedAt !== null && (
@@ -303,49 +318,25 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
           </div>
         </div>
 
-        <PreviousLine last={last} />
-        <SuggestionCard suggestion={suggestion} />
-        {current.notes && (
-          <button className="notice" style={{ textAlign: 'left' }} onClick={() => setSheet('notes')}>
-            <StickyNote size={16} /> <span>{current.notes}</span>
-          </button>
-        )}
+        <ExerciseContext last={last} suggestion={suggestion} />
 
-        <div className="pills" aria-label={t('common.sets')}>
-          {Array.from({ length: Math.max(p.warmupSets, warm.length) }).map((_, i) => {
-            const state = i < warm.length ? 'done' : kind === 'warmup' && i === warm.length && showLogger ? 'current' : ''
-            return (
-              <span key={`w${i}`} className={`pill warm ${state}`}>
-                {t('workout.warmupShort')} {i + 1}
-              </span>
-            )
-          })}
-          {Array.from({ length: Math.max(p.workingSets, working.length) }).map((_, i) => {
-            const state = i < working.length ? 'done' : kind === 'working' && i === working.length && showLogger ? 'current' : ''
-            return (
-              <span key={`k${i}`} className={`pill ${state}`}>
-                S{i + 1}
-              </span>
-            )
-          })}
-        </div>
-
-        {showLogger && (
+        {showLogger ? (
           <SetLogger
             key={`${current.id}-${current.sets.length}-${kind}`}
             defaults={defaults}
             label={loggerLabel}
+            progress={<SetPills p={p} warmDone={warm.length} workDone={working.length} current={kind} />}
+            submitLabel={submitLabel}
             stepKg={stepKg}
-            repRange={repRange}
-            target={kind === 'working' ? `${repRange} · RIR ${p.rirTarget}` : null}
             onSubmit={logSet}
             onKindChange={setKindOverride}
-            autoScroll={current.sets.length > 0}
           />
+        ) : (
+          <SetPills p={p} warmDone={warm.length} workDone={working.length} current={null} />
         )}
 
         {complete && current.status !== 'skipped' && !kindOverride && (
-          <section className="card accent">
+          <section className="card accent exercise-done">
             <div className="row">
               <Check size={20} color="var(--accent)" />
               <strong className="grow">{t('workout.exerciseDone')}</strong>
@@ -363,6 +354,13 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
               </>
             )}
           </section>
+        )}
+
+        {current.notes && (
+          <button className="note-line" onClick={() => setSheet('notes')} aria-label={t('common.notes')}>
+            <StickyNote size={15} />
+            <span>{current.notes}</span>
+          </button>
         )}
 
         {current.sets.length > 0 && (
@@ -390,7 +388,13 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
           </button>
         ) : (
           <div className="row wrap" style={{ gap: 'var(--s-2)' }}>
-            <button className="btn btn-sm grow" onClick={() => setKindOverride('working')}>
+            <button
+              className="btn btn-sm grow"
+              onClick={() => {
+                revealRef.current = true
+                setKindOverride('working')
+              }}
+            >
               <Plus size={16} /> {t('workout.addSet')}
             </button>
             <button className="btn btn-sm grow" onClick={() => setSheet('substitute')}>
@@ -406,9 +410,9 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
         )}
       </div>
 
-      {session.restTimer && <RestTimerDock timer={session.restTimer} settings={settings} onAction={onTimerAction} />}
+      {session.restTimer && <RestTimerDock timer={session.restTimer} onAction={onTimerAction} />}
 
-      <footer className="wk-footer">
+      <footer className="wk-footer" data-overlay-bottom>
         <div className="inner">
           <button className="btn" disabled={index === 0} onClick={() => mutate((s, n) => S.setCurrent(s, index - 1, n))}>
             <ChevronLeft size={20} /> {t('workout.previousExercise')}
@@ -427,9 +431,11 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
   )
 }
 
-function TopBar({ session, now, onMenu, onPause }: { session: WorkoutSession; now: number; onMenu: () => void; onPause: () => void }) {
+/** Owns the 1 s clock so the rest of the workout screen does not re-render every second. */
+function TopBar({ session, onMenu, onPause }: { session: WorkoutSession; onMenu: () => void; onPause: () => void }) {
+  const now = useNow(1000, session.pausedAt === null)
   return (
-    <header className="wk-top">
+    <header className="wk-top" data-overlay-top>
       <Link to="/" className="btn btn-ghost btn-icon" aria-label={t('common.back')}>
         <ChevronDown size={24} />
       </Link>
@@ -449,30 +455,53 @@ function TopBar({ session, now, onMenu, onPause }: { session: WorkoutSession; no
   )
 }
 
-function PreviousLine({ last }: { last: Awaited<ReturnType<typeof lastPerformance>> | undefined }) {
-  if (last === undefined) return null
-  if (!last) return <p className="prev-line faint">{t('workout.noHistory')}</p>
-  const sets = last.working.map((x) => `${formatNumber(x.weightKg)} × ${x.reps}${x.rir !== null ? ` (RIR ${x.rir})` : ''}`).join(' · ')
+/** Pills showing warm-ups and working sets: done, current, pending. */
+function SetPills({ p, warmDone, workDone, current }: { p: Prescription; warmDone: number; workDone: number; current: SetKind | null }) {
   return (
-    <p className="prev-line">
-      <span className="faint">{t('workout.lastTime', { date: formatShortDate(last.date) })}: </span>
-      {sets}
-    </p>
+    <div className="pills" aria-label={t('common.sets')}>
+      {Array.from({ length: Math.max(p.warmupSets, warmDone) }).map((_, i) => (
+        <span key={`w${i}`} className={`pill warm ${i < warmDone ? 'done' : current === 'warmup' && i === warmDone ? 'current' : ''}`}>
+          {t('workout.warmupShort')} {i + 1}
+        </span>
+      ))}
+      {Array.from({ length: Math.max(p.workingSets, workDone) }).map((_, i) => (
+        <span key={`k${i}`} className={`pill ${i < workDone ? 'done' : current === 'working' && i === workDone ? 'current' : ''}`}>
+          S{i + 1}
+        </span>
+      ))}
+    </div>
   )
 }
 
-function SuggestionCard({ suggestion }: { suggestion: ProgressionSuggestion | null }) {
-  if (!suggestion || suggestion.kind === 'none') return null
+/** "30 kg × 8/8/7 · RIR 2/2/1" when the load is constant, else "30 × 8 · 32,5 × 6". */
+function formatLastSets(sets: SetLog[]): string {
+  if (sets.length === 0) return '—'
+  const sameLoad = sets.every((x) => x.weightKg === sets[0].weightKg)
+  if (!sameLoad) return sets.map((x) => `${formatNumber(x.weightKg)} × ${x.reps}`).join(' · ')
+  const reps = sets.map((x) => x.reps).join('/')
+  const rirs = sets.every((x) => x.rir !== null) ? ` · RIR ${sets.map((x) => x.rir).join('/')}` : ''
+  return `${formatKg(sets[0].weightKg)} × ${reps}${rirs}`
+}
+
+/** Suggestion and last performance in one compact block above the logger. */
+function ExerciseContext({ last, suggestion }: { last: Awaited<ReturnType<typeof lastPerformance>> | undefined; suggestion: ProgressionSuggestion | null }) {
+  if (last === undefined) return null
+  if (!last || !suggestion || suggestion.kind === 'none') return <p className="prev-line faint">{t('workout.noHistory')}</p>
+  const lastLine = `${t('workout.lastShort', { date: formatShortDate(last.date) })}: ${formatLastSets(last.working)}`
   if (suggestion.kind === 'increase') {
-    const delta = `+${formatNumber(suggestion.stepKg)} kg${suggestion.pct !== null ? `, ${formatPct(suggestion.pct)}` : ''}`
+    const delta = `+${formatNumber(suggestion.stepKg)} kg${suggestion.pct !== null ? ` · ${formatPct(suggestion.pct)}` : ''}`
     return (
       <div className="suggest up">
-        <TrendingUp size={20} color="var(--accent)" style={{ marginTop: 2 }} />
-        <div className="stack" style={{ gap: 2 }}>
-          <span className="label">{t('workout.suggestion')}</span>
-          <span className="value">{t('workout.suggestIncrease', { kg: formatKg(suggestion.toKg), delta })}</span>
-          <span className="small muted">{t('workout.suggestIncreaseNote', { reps: suggestion.targetReps })}</span>
+        <TrendingUp size={18} color="var(--accent)" style={{ marginTop: 3 }} />
+        <div className="stack grow" style={{ gap: 2 }}>
+          <div className="suggest-head">
+            <span className="label">{t('workout.suggestion')}</span>
+            <span className="value">{`${formatKg(suggestion.toKg)} × ${suggestion.targetReps}`}</span>
+            <span className="delta">{delta}</span>
+          </div>
+          <span className="small muted">{t('workout.suggestIncreaseShort')}</span>
           {suggestion.stepAboveRange && <span className="small" style={{ color: 'var(--warn)' }}>{t('workout.suggestStepLarge')}</span>}
+          <span className="xs faint num">{lastLine}</span>
         </div>
       </div>
     )
@@ -486,11 +515,14 @@ function SuggestionCard({ suggestion }: { suggestion: ProgressionSuggestion | nu
   }[suggestion.reason]
   return (
     <div className="suggest">
-      <TrendingUp size={20} className="faint" style={{ marginTop: 2 }} />
-      <div className="stack" style={{ gap: 2 }}>
-        <span className="label">{t('workout.suggestion')}</span>
-        <span className="value">{t('workout.suggestHold', { kg: formatKg(suggestion.weightKg) })}</span>
+      <TrendingUp size={18} className="faint" style={{ marginTop: 3 }} />
+      <div className="stack grow" style={{ gap: 2 }}>
+        <div className="suggest-head">
+          <span className="label">{t('workout.suggestion')}</span>
+          <span className="value">{`${t('workout.suggestHold', { kg: formatKg(suggestion.weightKg) })} × ${suggestion.targetReps}`}</span>
+        </div>
         <span className="small muted">{note}</span>
+        <span className="xs faint num">{lastLine}</span>
       </div>
     </div>
   )

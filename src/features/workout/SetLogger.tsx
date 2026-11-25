@@ -1,5 +1,5 @@
 import { Check, Flame } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Stepper } from '../../components/Stepper'
 import type { SetKind } from '../../domain/types'
 import { t } from '../../i18n'
@@ -7,43 +7,40 @@ import type { LoggerDefaults } from './prefill'
 
 interface Props {
   defaults: LoggerDefaults
+  /** Accessible name, e.g. "Série 2". */
   label: string
+  /** Visible set progress (pills) shown in the header. */
+  progress: ReactNode
+  /** Button text, e.g. "Concluir série 2". */
+  submitLabel: string
   stepKg: number
-  repRange: string
-  /** Target shown under the label, e.g. "6–10 · RIR 2". */
-  target: string | null
   onSubmit: (v: { kind: SetKind; weightKg: number; reps: number; rir: number | null }) => Promise<unknown>
   onKindChange: (kind: SetKind) => void
-  /** Keep the confirm button above the timer dock after a set is logged. */
-  autoScroll?: boolean
 }
 
 const RIR_OPTIONS = [0, 1, 2, 3, 4, 5]
 
 /** The set entry card: everything pre-filled, one tap to log. */
-export function SetLogger({ defaults, label, stepKg, target, onSubmit, onKindChange, autoScroll }: Props) {
+export function SetLogger({ defaults, label, progress, submitLabel, stepKg, onSubmit, onKindChange }: Props) {
   const [weight, setWeight] = useState(defaults.weightKg)
   const [reps, setReps] = useState(defaults.reps)
   const [rir, setRir] = useState(defaults.rir)
   // Blocks double taps: the logger remounts with fresh defaults once saved.
   const [busy, setBusy] = useState(false)
-  const submitRef = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    if (!autoScroll) return
-    const id = requestAnimationFrame(() => submitRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
-    return () => cancelAnimationFrame(id)
-  }, [autoScroll])
   const warm = defaults.kind === 'warmup'
 
   return (
     <section className="logger" aria-label={label}>
       <div className="logger-head">
-        <span>
-          <strong>{label}</strong>
-          {target && <span className="small faint num"> · {target}</span>}
-        </span>
-        <button className="chip" aria-pressed={warm} onClick={() => onKindChange(warm ? 'working' : 'warmup')}>
-          <Flame size={14} /> {t('workout.warmup')}
+        {progress}
+        <button
+          className="chip"
+          aria-pressed={warm}
+          aria-label={t('workout.warmupToggle')}
+          title={t('workout.warmupToggle')}
+          onClick={() => onKindChange(warm ? 'working' : 'warmup')}
+        >
+          <Flame size={14} /> {t('workout.warmupShort')}
         </button>
       </div>
       <div className="logger-grid">
@@ -72,7 +69,6 @@ export function SetLogger({ defaults, label, stepKg, target, onSubmit, onKindCha
         </div>
       )}
       <button
-        ref={submitRef}
         className="btn btn-primary btn-lg btn-block logger-submit"
         disabled={busy}
         onClick={async () => {
@@ -85,7 +81,7 @@ export function SetLogger({ defaults, label, stepKg, target, onSubmit, onKindCha
           }
         }}
       >
-        <Check size={22} /> {warm ? t('workout.completeWarmup') : t('workout.completeSet')}
+        <Check size={22} /> {submitLabel}
       </button>
     </section>
   )

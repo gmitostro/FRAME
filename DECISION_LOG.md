@@ -51,6 +51,29 @@ A solução:
 ### D-009 · 24/11/2026 · Proteção contra toque duplo
 O botão de concluir série fica bloqueado até a gravação terminar. Um toque duplo não registra duas séries.
 
+### D-011 · 25/11/2026 · Alerta de descanso no nível do app
+- O alerta, a tela ligada e o desbloqueio de áudio saíram da tela de treino para um componente montado uma vez (`RestWatcher`).
+- O alerta é agendado para o horário exato do fim e reavaliado quando o app volta ao primeiro plano.
+- O alerta não toca atrasado: o iOS suspende o JavaScript em segundo plano, e um bipe tardio confundiria. O tempo excedido aparece na tela.
+- Alerta com a tela bloqueada exigiria Web Push com servidor, e mesmo assim sem precisão de segundos. Fica fora do escopo e documentado em `ARCHITECTURE.md`.
+
+### D-012 · 25/11/2026 · Ordem da tela de exercício
+Ordem de prioridade do usuário: nome, prescrição, sugestão, carga e reps, RIR, concluir.
+- "Última vez" e sugestão viraram um bloco compacto.
+- Os marcadores de série foram para o cabeçalho do formulário, e o botão diz qual série conclui ("Concluir série 2").
+- A nota do exercício foi para baixo do botão, limitada a duas linhas.
+
+Nada foi removido. Medição antes e depois em `TESTING.md`.
+
+### D-013 · 25/11/2026 · Rolagem automática medida
+- A rolagem só acontece depois de uma ação do usuário (registrar série, série extra).
+- A distância é medida pelos elementos fixos reais (marcados com `data-overlay-*`), e a rolagem é a mínima, nunca empurrando o elemento para baixo da barra superior.
+- A rolagem é sempre para baixo após registrar, e instantânea com "reduzir movimento".
+- Trocar de exercício sempre abre no topo.
+
+### D-014 · 25/11/2026 · "Reiniciar" volta ao descanso prescrito
+"Reiniciar" significa começar o descanso de novo. Os +15/+30 s valem para o descanso em andamento e não se acumulam.
+
 ## Treino
 
 ### T-001 · 24/11/2026 · Esqueleto FRFB sem exercícios

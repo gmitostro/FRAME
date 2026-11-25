@@ -19,9 +19,15 @@ function audio(): AudioContext | null {
   }
 }
 
+/**
+ * Starts or revives the audio context. Must run inside a user gesture on iOS.
+ * iOS also leaves the context "interrupted" (not only "suspended") after the
+ * app was in the background or a call came in, so resume on any non-running
+ * state. Creating the context lazily here keeps the first tap as the unlock.
+ */
 export function unlockAudio(): void {
   const a = audio()
-  if (a && a.state === 'suspended') void a.resume().catch(() => {})
+  if (a && a.state !== 'running') void a.resume().catch(() => {})
 }
 
 /** Two short soft tones. */
@@ -29,8 +35,10 @@ export function playRestEndSound(): void {
   const a = audio()
   if (!a) return
   try {
-    if (a.state === 'suspended') void a.resume()
-    const start = a.currentTime + 0.02
+    // Outside a gesture this may be refused on iOS; the tones are then lost,
+    // which is why the screen always shows the finished state as well.
+    if (a.state !== 'running') void a.resume().catch(() => {})
+    const start = a.currentTime + 0.05
     ;[0, 0.22].forEach((offset, i) => {
       const osc = a.createOscillator()
       const gain = a.createGain()

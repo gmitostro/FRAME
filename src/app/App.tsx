@@ -5,6 +5,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ToastProvider, useToast } from '../components/Toast'
 import { sessionElapsedMs } from '../domain/session'
+import { remainingMs } from '../domain/timer'
 import { ExerciseDetailPage } from '../features/exercises/ExerciseDetailPage'
 import { ExerciseFormPage } from '../features/exercises/ExerciseFormPage'
 import { ExerciseLibraryPage } from '../features/exercises/ExerciseLibraryPage'
@@ -18,6 +19,7 @@ import { ActiveWorkoutPage } from '../features/workout/ActiveWorkoutPage'
 import { WorkoutSummaryPage } from '../features/workout/WorkoutSummaryPage'
 import { formatClock, t } from '../i18n'
 import { useActiveSession, useNow } from './hooks'
+import { RestWatcher } from './RestWatcher'
 
 function TabBar() {
   const tabs = [
@@ -46,7 +48,7 @@ function LiveBanner() {
   const now = useNow(1000, !!session)
   if (!session) return null
   const timer = session.restTimer
-  const remaining = timer ? timer.durationMs - Math.max(0, (timer.pausedAt ?? now) - timer.startedAt - timer.pausedMs) : null
+  const remaining = timer ? remainingMs(timer, now) : null
   return (
     <div className="live-banner">
       <Link to="/treino">
@@ -59,7 +61,7 @@ function LiveBanner() {
         </span>
         {remaining !== null && (
           <span className="num" style={{ fontWeight: 650, color: remaining <= 0 ? 'var(--accent)' : 'var(--text)' }}>
-            {remaining > 0 ? formatClock(remaining) : t('timer.restDone')}
+            {remaining > 0 ? formatClock(remaining) : `${t('timer.restDoneShort')} ${t('timer.overrun', { time: formatClock(-remaining) })}`}
           </span>
         )}
         {remaining === null && <span className="num muted">{formatClock(sessionElapsedMs(session, now))}</span>}
@@ -138,6 +140,7 @@ export function App() {
     <ErrorBoundary>
       <ToastProvider>
         <PwaStatus />
+        <RestWatcher />
         <RouterProvider router={router} />
       </ToastProvider>
     </ErrorBoundary>

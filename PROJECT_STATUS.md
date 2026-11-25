@@ -1,6 +1,6 @@
 # Status do projeto
 
-Atualizado em 24/11/2026 · versão 0.2.0
+Atualizado em 25/11/2026 · versão 0.2.2
 
 ## Fases
 
@@ -65,16 +65,17 @@ Atualizado em 24/11/2026 · versão 0.2.0
 ## Problemas conhecidos
 
 - **Nada foi testado em um iPhone real.** Os testes ponta a ponta usam Chromium emulando o iPhone 13. Safari/WebKit não está disponível neste ambiente.
-- No iPhone, o JavaScript para quando o app vai para segundo plano. O tempo restante é recalculado corretamente ao voltar, mas **não há alerta sonoro com o app fechado ou a tela bloqueada**. Isso exige notificações (Fase 9).
-- O Safari do iPhone não tem a API de vibração.
+- No iPhone, o JavaScript para quando o app vai para segundo plano. O tempo restante é recalculado corretamente ao voltar, mas **não há alerta sonoro com o app fechado ou a tela bloqueada**. Detalhes e alternativas em `ARCHITECTURE.md` ("iOS / PWA platform limits").
+- No iPhone, o som do fim do descanso fica mudo com a chave de silêncio ligada, e o Safari não tem a API de vibração.
+- No iPhone SE, ao aparecer o cronômetro a tela rola ~94 px e o nome do exercício sai da vista; a barra superior mostra o nome do treino, não o do exercício.
 - O bundle JS tem 166 KB gzip, carregado uma vez e mantido em cache offline.
 
 ## Testes realizados
 
 Ver `TESTING.md`. Resumo desta versão:
 - typecheck, lint e build sem erros;
-- 36 testes unitários passando;
-- teste ponta a ponta com 19 verificações passando.
+- 47 testes unitários passando;
+- três testes ponta a ponta passando: fluxo completo (19 verificações), cronômetro (10) e layout em 4 tamanhos de iPhone (6).
 
 ## Próximos passos
 

@@ -7,9 +7,11 @@ import type { RestTimerState } from './types'
  */
 
 export function startTimer(now: number, durationSec: number, exerciseRef: string, setId: string): RestTimerState {
+  const durationMs = Math.max(0, Math.round(durationSec * 1000))
   return {
     startedAt: now,
-    durationMs: Math.max(0, Math.round(durationSec * 1000)),
+    durationMs,
+    baseDurationMs: durationMs,
     pausedAt: null,
     pausedMs: 0,
     exerciseRef,
@@ -47,8 +49,16 @@ export function resumeTimer(t: RestTimerState, now: number): RestTimerState {
   return { ...t, pausedMs: t.pausedMs + Math.max(0, now - t.pausedAt), pausedAt: null }
 }
 
+/** Starts the rest over with the prescribed duration (drops +15/+30 s). */
 export function restartTimer(t: RestTimerState, now: number): RestTimerState {
-  return { ...t, startedAt: now, pausedAt: t.pausedAt === null ? null : now, pausedMs: 0, alerted: false }
+  return {
+    ...t,
+    startedAt: now,
+    durationMs: t.baseDurationMs ?? t.durationMs,
+    pausedAt: t.pausedAt === null ? null : now,
+    pausedMs: 0,
+    alerted: false,
+  }
 }
 
 /** Adds time to the rest. Works also after the countdown reached zero. */

@@ -1,47 +1,31 @@
 import { Pause, Play, RotateCcw, X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
 import { useNow } from '../../app/hooks'
+import type { TimerAction } from '../../domain/session'
 import * as T from '../../domain/timer'
-import type { RestTimerState, Settings } from '../../domain/types'
-import { playRestEndSound, vibrate } from '../../lib/feedback'
+import type { RestTimerState } from '../../domain/types'
 import { formatClock, t } from '../../i18n'
 
 interface Props {
   timer: RestTimerState
-  settings: Settings
-  onAction: (a: { type: 'pause' } | { type: 'resume' } | { type: 'restart' } | { type: 'extend'; sec: number } | { type: 'dismiss' } | { type: 'markAlerted' }) => void
+  onAction: (a: Exclude<TimerAction, { type: 'markAlerted' }>) => void
 }
 
-/** Alerts only if the end was seen live (within this window). */
-const LIVE_ALERT_WINDOW_MS = 5000
-
-export function RestTimerDock({ timer, settings, onAction }: Props) {
+/**
+ * Display and controls only. The end-of-rest alert lives in RestWatcher so
+ * it also fires when another tab is open. Time is always recomputed from the
+ * stored timestamps; the 250 ms tick only refreshes the digits.
+ */
+export function RestTimerDock({ timer, onAction }: Props) {
   const now = useNow(250)
   const remaining = T.remainingMs(timer, now)
   const paused = T.isPaused(timer)
   const done = remaining <= 0
   const pct = T.progress(timer, now)
-  const alertedRef = useRef(timer.alerted)
-
-  useEffect(() => {
-    alertedRef.current = timer.alerted
-  }, [timer.alerted])
-
-  useEffect(() => {
-    if (!done || paused || alertedRef.current) return
-    alertedRef.current = true
-    const overdue = -remaining
-    if (overdue < LIVE_ALERT_WINDOW_MS && document.visibilityState === 'visible') {
-      if (settings.soundEnabled) playRestEndSound()
-      if (settings.hapticsEnabled) vibrate([120, 80, 120])
-    }
-    onAction({ type: 'markAlerted' })
-  }, [done, paused, remaining, settings.soundEnabled, settings.hapticsEnabled, onAction])
 
   const cls = ['timer-card', done ? 'done' : '', paused ? 'paused' : ''].join(' ')
   return (
     <div className="timer-dock" role="timer" aria-live="off">
-      <div className={cls}>
+      <div className={cls} data-overlay-bottom>
         <div className="timer-bar">
           <span style={{ width: `${pct * 100}%` }} />
         </div>
@@ -52,7 +36,7 @@ export function RestTimerDock({ timer, settings, onAction }: Props) {
               {done ? t('timer.overrun', { time: formatClock(-remaining) }) : formatClock(remaining)}
             </div>
           </div>
-        <div className="timer-actions">
+          <div className="timer-actions">
           <button className="btn" onClick={() => onAction({ type: paused ? 'resume' : 'pause' })} aria-label={paused ? t('timer.resume') : t('timer.pause')}>
             {paused ? <Play size={18} /> : <Pause size={18} />}
           </button>

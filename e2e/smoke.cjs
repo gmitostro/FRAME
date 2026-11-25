@@ -180,6 +180,22 @@ async function startServer() {
     await page.getByText('Exercício concluído').waitFor()
     log('second set pre-filled and logged; exercise complete')
 
+    // Edit the last set: +1 rep, then back, and toggle the technique flag on/off
+    await page.locator('.set-row.done').last().click()
+    await page.locator('.sheet').getByRole('button', { name: 'Aumentar Reps' }).click()
+    await page.locator('.sheet').getByRole('button', { name: 'Salvar' }).click()
+    await until(async () => (await page.locator('.set-row.done').last().innerText()).includes('80 kg × 11'), 'edited reps saved')
+    await page.locator('.set-row.done').last().click()
+    await page.locator('.sheet').getByRole('switch', { name: 'Técnica comprometida' }).click()
+    await page.locator('.sheet').getByRole('button', { name: 'Salvar' }).click()
+    await until(async () => (await page.locator('.set-row.done .badge.warn').count()) === 1, 'technique flag shown')
+    await page.locator('.set-row.done').last().click()
+    await page.locator('.sheet').getByRole('switch', { name: 'Técnica comprometida' }).click()
+    await page.locator('.sheet').getByRole('button', { name: 'Diminuir Reps' }).click()
+    await page.locator('.sheet').getByRole('button', { name: 'Salvar' }).click()
+    await until(async () => (await page.locator('.set-row.done .badge.warn').count()) === 0 && (await page.locator('.set-row.done').last().innerText()).includes('80 kg × 10'), 'edit reverted')
+    log('set edit: reps and technique flag saved and reverted')
+
     await page.getByRole('button', { name: /A seguir: Rosca direta com barra/ }).click()
     await page.locator('.wk-name', { hasText: 'Rosca direta com barra' }).waitFor()
     for (let i = 0; i < 2; i++) {

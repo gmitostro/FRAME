@@ -145,6 +145,8 @@ export interface SetLog {
   completedAt: number
   /** Actual rest since the previous working set of the same exercise (s). */
   restBeforeSec: number | null
+  /** Session pausedMs when the set was logged; lets rest exclude pauses. */
+  pausedMsAt?: number
 }
 
 export interface Prescription {
@@ -174,6 +176,8 @@ export interface SessionExercise {
 export interface RestTimerState {
   startedAt: number
   durationMs: number
+  /** Prescribed rest; restart returns to it (extensions are discarded). */
+  baseDurationMs?: number
   pausedAt: number | null
   pausedMs: number
   /** SessionExercise id the timer belongs to. */

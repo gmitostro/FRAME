@@ -115,13 +115,17 @@ export function addSet(
   newId: IdFn,
   opts: { warmupStartsTimer: boolean },
 ): WorkoutSession {
+  if (!s.exercises[index]) return s
+  // Logging a set means training has resumed: never keep the clock paused.
+  s = resumeSession(s, now)
   const ex = s.exercises[index]
-  if (!ex) return s
   const input = sanitizeSetInput(raw)
   const prevWorking = workingSets(ex).at(-1)
   let restBeforeSec: number | null = null
   if (input.kind === 'working' && prevWorking) {
-    restBeforeSec = Math.max(0, Math.round((now - prevWorking.completedAt) / 1000))
+    // Time paused between the two sets is not rest.
+    const pausedBetween = Math.max(0, s.pausedMs - (prevWorking.pausedMsAt ?? s.pausedMs))
+    restBeforeSec = Math.max(0, Math.round((now - prevWorking.completedAt - pausedBetween) / 1000))
   }
   const set: SetLog = {
     id: newId(),
@@ -132,6 +136,7 @@ export function addSet(
     formIssue: input.formIssue || undefined,
     completedAt: now,
     restBeforeSec,
+    pausedMsAt: s.pausedMs,
   }
   const sets = [...ex.sets, set]
   const updated: SessionExercise = { ...ex, sets }
@@ -306,7 +311,9 @@ export function resumeSession(s: WorkoutSession, now: number): WorkoutSession {
     ...s,
     pausedAt: null,
     pausedMs: s.pausedMs + delta,
-    restTimer: s.restTimer ? T.resumeTimer(s.restTimer, now) : null,
+    // Resume the rest timer only if the workout pause paused it; a timer the
+    // user paused on purpose stays paused.
+    restTimer: s.restTimer && s.restTimer.pausedAt === s.pausedAt ? T.resumeTimer(s.restTimer, now) : s.restTimer,
     updatedAt: now,
   }
 }
