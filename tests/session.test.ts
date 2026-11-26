@@ -37,6 +37,33 @@ describe('workout pause and rest timer', () => {
     expect(T.remainingMs(s.restTimer!, t0 + 200_000)).toBe(110_000)
   })
 
+  it('E: workout paused, +30 s, Reiniciar: timer stays paused with the right time and resumes with the workout', () => {
+    let s = S.addSet(session(), 0, work, t0, newId, opts) // rest 120 s
+    s = S.pauseSession(s, t0 + 20_000)
+    expect(T.isPaused(s.restTimer!)).toBe(true)
+    expect(T.remainingMs(s.restTimer!, t0 + 90_000)).toBe(100_000)
+    s = S.applyTimerAction(s, { type: 'extend', sec: 30 }, t0 + 40_000)
+    expect(T.remainingMs(s.restTimer!, t0 + 40_000)).toBe(130_000)
+    s = S.applyTimerAction(s, { type: 'restart' }, t0 + 50_000)
+    expect(T.isPaused(s.restTimer!)).toBe(true)
+    expect(T.remainingMs(s.restTimer!, t0 + 120_000)).toBe(100_000)
+    // still linked to the workout pause, so resuming the workout resumes it
+    expect(s.restTimer!.pausedAt).toBe(s.pausedAt)
+    s = S.resumeSession(s, t0 + 200_000)
+    expect(T.isPaused(s.restTimer!)).toBe(false)
+    expect(T.remainingMs(s.restTimer!, t0 + 210_000)).toBe(90_000)
+    expect(S.sessionElapsedMs(s, t0 + 210_000)).toBe(30_000)
+  })
+
+  it('Reiniciar on a running timer keeps elapsed time through the session state', () => {
+    let s = S.addSet(session(), 0, work, t0, newId, opts)
+    s = S.applyTimerAction(s, { type: 'extend', sec: 30 }, t0 + 20_000)
+    s = S.applyTimerAction(s, { type: 'extend', sec: 15 }, t0 + 25_000)
+    s = S.applyTimerAction(s, { type: 'restart' }, t0 + 30_000)
+    expect(T.remainingMs(s.restTimer!, t0 + 30_000)).toBe(90_000)
+    expect(s.restTimer!.startedAt).toBe(t0)
+  })
+
   it('logging a set while paused resumes the workout', () => {
     let s = S.addSet(session(), 0, work, t0, newId, opts)
     s = S.pauseSession(s, t0 + 60_000)

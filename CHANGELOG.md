@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 · 26/11/2026 · Reliability & Polish
+
+### Fixed
+- "Reiniciar" on the rest timer removes only manual +15/+30 s extensions and keeps the elapsed time (2:00 → 20 s → +30 s → Reiniciar = 1:40, no longer 2:00).
+- "Reiniciar" while the workout is paused no longer detaches the timer from the workout pause, so resuming the workout resumes the timer again.
+
 ## 0.2.2 · 25/11/2026
 
 ### Fixed

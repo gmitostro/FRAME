@@ -49,16 +49,19 @@ export function resumeTimer(t: RestTimerState, now: number): RestTimerState {
   return { ...t, pausedMs: t.pausedMs + Math.max(0, now - t.pausedAt), pausedAt: null }
 }
 
-/** Starts the rest over with the prescribed duration (drops +15/+30 s). */
+/**
+ * "Reiniciar": removes every manual extension (+15/+30 s) from the current
+ * rest. Extensions only ever change durationMs, so restoring the prescribed
+ * duration undoes them while startedAt, pausedAt and pausedMs keep the time
+ * already elapsed and the pause state exactly as they were.
+ * Sessions saved before baseDurationMs existed have no record of the
+ * original duration and are left unchanged.
+ */
 export function restartTimer(t: RestTimerState, now: number): RestTimerState {
-  return {
-    ...t,
-    startedAt: now,
-    durationMs: t.baseDurationMs ?? t.durationMs,
-    pausedAt: t.pausedAt === null ? null : now,
-    pausedMs: 0,
-    alerted: false,
-  }
+  const next = { ...t, durationMs: t.baseDurationMs ?? t.durationMs }
+  // Rest still running: the end alert is due again. Rest already over without
+  // the extensions: treat it as alerted so no late beep plays.
+  return { ...next, alerted: remainingMs(next, now) <= 0 }
 }
 
 /** Adds time to the rest. Works also after the countdown reached zero. */

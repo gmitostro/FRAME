@@ -83,6 +83,24 @@ async function startServer() {
     const m = s.replace('+', '').trim().split(':').map(Number)
     return m.length === 3 ? m[0] * 3600 + m[1] * 60 + m[2] : m[0] * 60 + m[1]
   }
+  /** Rest timer as stored in IndexedDB (the source of truth), not the screen. */
+  const storedTimer = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve, reject) => {
+          const req = indexedDB.open('frame')
+          req.onerror = () => reject(req.error)
+          req.onsuccess = () => {
+            const db = req.result
+            const q = db.transaction('sessions').objectStore('sessions').getAll()
+            q.onerror = () => reject(q.error)
+            q.onsuccess = () => {
+              db.close()
+              resolve(q.result.find((x) => x.status === 'active')?.restTimer ?? null)
+            }
+          }
+        }),
+    )
   async function logSet() {
     const before = await page.locator('.set-row.done').count()
     await page.locator('.logger-submit').click()
@@ -131,19 +149,39 @@ async function startServer() {
     await until(async () => (await alerts()) === 2, 'alert after +30 s')
     log('+30 s after overrun restarts from now and alerts again')
 
-    // 3. Restart, pause holds time, resume continues
+    // 3. Real-use repro: 2:00 → 20 s → 1:40 → +30 → 2:10 → +15 → 2:25 → Reiniciar → 1:40
+    await logSet() // second working set: a new 2:00 rest
+    await until(async () => (await dockTime()) === '2:00', 'new rest at 2:00')
+    const before3 = await storedTimer()
+    await page.clock.fastForward(20_000)
+    await until(async () => (await dockTime()) === '1:40', `1:40 after 20 s (saw ${await dockTime()})`)
+    await page.getByRole('button', { name: '+30 s' }).click()
+    await until(async () => (await dockTime()) === '2:10', `+30 s → 2:10 (saw ${await dockTime()})`)
+    await page.getByRole('button', { name: '+15 s' }).click()
+    await until(async () => (await dockTime()) === '2:25', `+15 s → 2:25 (saw ${await dockTime()})`)
     await page.getByRole('button', { name: 'Reiniciar descanso' }).click()
-    await until(async () => (await dockTime()) === '2:00', 'restart to 2:00')
+    await until(async () => (await dockTime()) === '1:40', `Reiniciar → 1:40 (saw ${await dockTime()})`)
+    const after3 = await storedTimer()
+    assert(after3.durationMs === 120_000 && after3.startedAt === before3.startedAt && after3.pausedMs === before3.pausedMs && after3.pausedAt === null,
+      `stored state keeps elapsed time: ${JSON.stringify({ before3, after3 })}`)
+    log('Reiniciar removes +30/+15 s and keeps the 20 s elapsed: 2:25 → 1:40 (screen and stored state)')
+
+    // pause holds the time, resume continues from it
     await page.getByRole('button', { name: 'Pausar descanso' }).click()
     await page.getByRole('button', { name: 'Continuar descanso' }).waitFor()
+    const held3 = await dockTime() // real time keeps flowing between clicks
+    assert(toSec(held3) >= 98 && toSec(held3) <= 100, `paused near 1:40 (${held3})`)
     await page.clock.fastForward(300_000)
-    assert((await dockTime()) === '2:00', `paused timer holds (${await dockTime()})`)
+    assert((await dockTime()) === held3, `paused timer holds (${held3} → ${await dockTime()})`)
     assert((await alerts()) === 2, 'no alert while paused')
+    await page.getByRole('button', { name: 'Reiniciar descanso' }).click()
+    await page.waitForTimeout(300)
+    assert((await dockTime()) === held3 && (await dockLabel()).toLowerCase() === 'pausado', `Reiniciar while paused keeps it paused at ${held3} (${await dockLabel()} ${await dockTime()})`)
     await page.getByRole('button', { name: 'Continuar descanso' }).click()
     await page.getByRole('button', { name: 'Pausar descanso' }).waitFor() // saved before time moves
     await page.clock.fastForward(60_000)
-    await until(async () => toSec(await dockTime()) <= 60 && toSec(await dockTime()) >= 58, `resumed countdown (saw ${await dockTime()} ${await dockLabel()})`)
-    log(`restart → 2:00, 5 min paused without change, resumed (${await dockTime()})`)
+    await until(async () => Math.abs(toSec(await dockTime()) - (toSec(held3) - 60)) <= 2, `resumed countdown from ${held3} (saw ${await dockTime()} ${await dockLabel()})`)
+    log(`5 min paused without change, Reiniciar while paused stays paused, resumed (${await dockTime()})`)
 
     // 4. Workout pause does not override a manual timer pause
     await page.getByRole('button', { name: 'Pausar descanso' }).click()
@@ -171,6 +209,7 @@ async function startServer() {
     log(`10 min jump: overrun ${await dockTime()} from timestamps, no late beep`)
 
     // 6. Reload during rest keeps the countdown
+    await page.getByRole('button', { name: 'Série extra' }).click()
     await logSet()
     await page.clock.fastForward(30_000)
     await page.reload()

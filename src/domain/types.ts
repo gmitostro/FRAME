@@ -176,7 +176,7 @@ export interface SessionExercise {
 export interface RestTimerState {
   startedAt: number
   durationMs: number
-  /** Prescribed rest; restart returns to it (extensions are discarded). */
+  /** Prescribed rest; "Reiniciar" restores it, removing manual extensions. */
   baseDurationMs?: number
   pausedAt: number | null
   pausedMs: number

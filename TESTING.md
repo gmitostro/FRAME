@@ -20,14 +20,14 @@ npm run e2e
 
 `npm run e2e` needs a build first. It runs three suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability) and `e2e/layout.cjs` (four screen sizes and the summary). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 47 tests)
+## Unit and persistence tests (Vitest, 57 tests)
 
 | File | Covers |
 |---|---|
-| `tests/timer.test.ts` | Remaining time from timestamps, long background gaps, pause/resume, double pause, +15/+30 s including after overrun, restart (back to the prescribed rest) |
+| `tests/timer.test.ts` | Remaining time from timestamps, long background gaps, pause/resume, double pause, +15/+30 s including after overrun; "Reiniciar" scenarios A–E (+30, +15, accumulated, none, paused), overrun without a late alert, legacy timers |
 | `tests/progression.test.ts` | Every double-progression branch, RIR tolerance, technique flag, incomplete sets, reps below range, step size by body region and equipment, step above 10% |
 | `tests/duration.test.ts` | Empty workout, breakdown (work, rest, warm-ups, transition), rest override clamped to minimum, ±5 min target band |
-| `tests/session.test.ts` | Workout pause vs. a manually paused timer, logging a set while paused, recorded rest excluding pauses and legacy sets, set edit and delete (timer cleared), records of the day |
+| `tests/session.test.ts` | "Reiniciar" while the workout is paused (stays paused, resumes with the workout), Workout pause vs. a manually paused timer, logging a set while paused, recorded rest excluding pauses and legacy sets, set edit and delete (timer cleared), records of the day |
 | `tests/prefill.test.ts` | Warm-up vs working order, history warm-ups, suggested load, repeat of the session's last set, no-history fallback |
 | `tests/program.test.ts` | FRFB V1 validates against the library, weekly direct sets match the ficha's summary, estimated durations, invalid ficha rejection, import replaces workouts without touching history, export/import round-trip with custom exercises |
 | `tests/data.test.ts` | Database seed (library, FRFB V1, settings), seed sync preserving user edits, template editing with clamping, live-session persistence across a new DB connection (reload), a second active session blocked, history snapshot unaffected by template edits, substitution in place and after logged sets, pause excluded from workout time and rest, backup round-trip and rejection of invalid/newer files |
@@ -66,7 +66,7 @@ Chromium, iPhone 13 viewport, Playwright-controlled clock. Web Audio and Wake Lo
 2. Rest-end alert fires while the Home tab is open; banner shows the overrun.
 3. No repeated alert when returning to the workout.
 4. +30 s after the end counts from now and alerts again.
-5. Restart returns to 2:00; 5 min paused without change; resume continues.
+5. Real-use repro: 2:00 → 20 s → 1:40 → +30 s → 2:10 → +15 s → 2:25 → Reiniciar → 1:40, checked on screen and in the IndexedDB state (start and pauses unchanged). Then 5 min paused without change, Reiniciar while paused stays paused, resume continues.
 6. A timer paused by the user stays paused when the workout is resumed.
 7. A 10-minute clock jump (JavaScript not running, as when the phone is locked): overrun computed from timestamps, no late beep.
 8. Reload during rest keeps the remaining time.

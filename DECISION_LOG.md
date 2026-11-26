@@ -71,8 +71,17 @@ Nada foi removido. Medição antes e depois em `TESTING.md`.
 - A rolagem é sempre para baixo após registrar, e instantânea com "reduzir movimento".
 - Trocar de exercício sempre abre no topo.
 
-### D-014 · 25/11/2026 · "Reiniciar" volta ao descanso prescrito
-"Reiniciar" significa começar o descanso de novo. Os +15/+30 s valem para o descanso em andamento e não se acumulam.
+### D-014 · 25/11/2026 · "Reiniciar" volta ao descanso prescrito (substituída pela D-015)
+"Reiniciar" significava começar o descanso de novo. Os +15/+30 s valiam para o descanso em andamento e não se acumulavam.
+
+### D-015 · 26/11/2026 · "Reiniciar" remove só os acréscimos manuais
+**Motivo:** no uso real no iPhone, "Reiniciar" devolvia o tempo já transcorrido (2:00 → 20 s → 1:40 → +30 s → Reiniciar → 2:00).
+
+**Regra nova:** "Reiniciar" remove todos os +15/+30 s do descanso atual e preserva o tempo transcorrido e o estado de pausa. No mesmo exemplo, o resultado é 1:40.
+- Sem acréscimos, nada muda.
+- Se, sem os acréscimos, o descanso já tiver terminado, ele continua mostrando o tempo excedido sem tocar um alerta atrasado.
+
+**Implementação:** a regra só restaura `durationMs` ao valor prescrito. Não há estado novo.
 
 ## Treino
 

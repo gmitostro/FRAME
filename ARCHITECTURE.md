@@ -65,7 +65,8 @@ Training rules live in `src/domain`. UI components call them and never hold rule
 **State** (`domain/timer.ts`, stored in the active session):
 - `{ startedAt, durationMs, baseDurationMs, pausedAt, pausedMs, alerted }`.
 - Remaining time is always `duration − (now − startedAt − pausedMs)`. It is never a decrementing counter, so it is correct after backgrounding, screen lock or reload.
-- +15/+30 s after the end count from "now". Restart returns to `baseDurationMs` (the prescribed rest) and drops extensions.
+- +15/+30 s only increase `durationMs` (after the end they count from "now").
+- "Reiniciar" removes every manual extension by restoring `durationMs = baseDurationMs`. It leaves `startedAt`, `pausedAt` and `pausedMs` untouched, so elapsed time stays elapsed and the pause state is preserved. Example: 2:00, 20 s pass (1:40), +30 s (2:10), Reiniciar → 1:40.
 
 **Display** (`features/workout/RestTimerDock.tsx`):
 - Ticks every 250 ms only to refresh the digits, and recomputes on `visibilitychange`/`focus`.
