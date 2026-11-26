@@ -1,7 +1,9 @@
 import { resolveRestSec } from './duration'
+import { loadProfile } from './load'
 import * as T from './timer'
 import type {
   Exercise,
+  RirSource,
   SessionExercise,
   SetKind,
   SetLog,
@@ -30,6 +32,7 @@ export function buildSession(
       id: newId(),
       exerciseId: te.exerciseId,
       name: ex?.namePt ?? '—',
+      loadProfile: ex ? loadProfile(ex) : undefined,
       prescription: {
         workingSets: te.workingSets,
         warmupSets: te.warmupSets,
@@ -90,6 +93,8 @@ export interface SetInput {
   weightKg: number
   reps: number
   rir: number | null
+  /** 'user' when the RIR was tapped, 'default' when the pre-fill was kept. */
+  rirSource?: RirSource
   formIssue?: boolean
 }
 
@@ -133,6 +138,7 @@ export function addSet(
     weightKg: input.weightKg,
     reps: input.reps,
     rir: input.kind === 'working' ? input.rir : null,
+    rirSource: input.kind === 'working' && input.rir !== null ? input.rirSource : undefined,
     formIssue: input.formIssue || undefined,
     completedAt: now,
     restBeforeSec,
@@ -167,12 +173,16 @@ export function updateSet(
       rir: patch.rir !== undefined ? patch.rir : x.rir,
       formIssue: patch.formIssue ?? x.formIssue,
     })
+    const rir = merged.kind === 'working' ? merged.rir : null
+    // An edit that sets the RIR records who set it; otherwise keep the origin.
+    const rirSource = rir === null ? undefined : (patch.rirSource ?? x.rirSource)
     return {
       ...x,
       kind: merged.kind,
       weightKg: merged.weightKg,
       reps: merged.reps,
-      rir: merged.kind === 'working' ? merged.rir : null,
+      rir,
+      rirSource,
       formIssue: merged.formIssue || undefined,
     }
   })
@@ -242,6 +252,7 @@ export function substituteExercise(
       ...ex,
       exerciseId: replacement.id,
       name: replacement.namePt,
+      loadProfile: loadProfile(replacement),
       substitutedFor: ex.substitutedFor ?? { exerciseId: ex.exerciseId, name: ex.name },
       prescription: { ...ex.prescription, restSec },
     }
@@ -252,6 +263,7 @@ export function substituteExercise(
     id: newId(),
     exerciseId: replacement.id,
     name: replacement.namePt,
+    loadProfile: loadProfile(replacement),
     substitutedFor: { exerciseId: ex.exerciseId, name: ex.name },
     prescription: { ...ex.prescription, workingSets: remaining, warmupSets: 0, restSec },
     status: 'pending',
@@ -273,6 +285,7 @@ export function addExerciseToSession(
     id: newId(),
     exerciseId: exercise.id,
     name: exercise.namePt,
+    loadProfile: loadProfile(exercise),
     prescription: {
       workingSets: 2,
       warmupSets: 0,

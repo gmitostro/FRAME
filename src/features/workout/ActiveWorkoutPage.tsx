@@ -21,9 +21,10 @@ import { useActiveSession, useExerciseMap, useNow, useSettings } from '../../app
 import { ConfirmSheet, Sheet } from '../../components/Sheet'
 import { useToast } from '../../components/Toast'
 import { lastPerformance, mutateSession } from '../../data/repo'
+import { loadProfile } from '../../domain/load'
 import { suggestProgression, type ProgressionSuggestion } from '../../domain/progression'
 import * as S from '../../domain/session'
-import type { Exercise, Prescription, SessionExercise, SetKind, SetLog, Settings, WorkoutSession } from '../../domain/types'
+import type { Exercise, LoadProfile, Prescription, RirSource, SessionExercise, SetKind, SetLog, Settings, WorkoutSession } from '../../domain/types'
 import { unlockAudio } from '../../lib/feedback'
 import { revealBetweenOverlays } from '../../lib/reveal'
 import { newId } from '../../lib/id'
@@ -69,6 +70,9 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
   const current: SessionExercise | undefined = session.exercises[index]
   const exercise = current ? exMap.get(current.exerciseId) : undefined
   const stepKg = exercise?.loadStepKg ?? 2.5
+  // The session's own snapshot wins; sessions started before v0.3 fall back
+  // to the exercise's current classification.
+  const profile: LoadProfile = current?.loadProfile ?? (exercise ? loadProfile(exercise) : { loadType: 'external', loadBasis: 'total', unilateral: false, measure: 'reps' })
 
   const last = useLiveQuery(async () => (current ? lastPerformance(current.exerciseId) : null), [current?.exerciseId])
 
@@ -155,7 +159,7 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
   // Wait for history so pre-filled values are right on first render.
   const showLogger = last !== undefined && current.status !== 'skipped' && (!complete || kindOverride !== null)
 
-  async function logSet(v: { kind: SetKind; weightKg: number; reps: number; rir: number | null }) {
+  async function logSet(v: { kind: SetKind; weightKg: number; reps: number; rir: number | null; rirSource?: RirSource }) {
     unlockAudio()
     revealRef.current = true
     await mutate((s, n) => S.addSet(s, index, v, n, newId, { warmupStartsTimer: settings.warmupStartsTimer }))
@@ -271,6 +275,7 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
         <SetEditSheet
           set={editing}
           stepKg={stepKg}
+          profile={profile}
           onClose={() => setEditing(null)}
           onDelete={() => {
             const id = editing?.id
@@ -328,6 +333,7 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
             progress={<SetPills p={p} warmDone={warm.length} workDone={working.length} current={kind} />}
             submitLabel={submitLabel}
             stepKg={stepKg}
+            profile={profile}
             onSubmit={logSet}
             onKindChange={setKindOverride}
           />

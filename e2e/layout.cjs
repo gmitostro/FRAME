@@ -86,7 +86,7 @@ async function finish(page) {
       await page.locator('.logger-submit').waitFor()
       for (let i = 0; i < 2; i++) await logAndWait(page)
       for (let i = 0; i < 3; i++) {
-        const weight = page.locator('.logger input[aria-label="Carga"]')
+        const weight = page.locator('.logger .logger-grid input')
         await weight.fill('30')
         await weight.blur()
         const reps = page.locator('.logger [aria-label="Reps"] .value')

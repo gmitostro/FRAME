@@ -6,8 +6,9 @@ import { useSettings } from '../../app/hooks'
 import { PageHeader } from '../../components/PageHeader'
 import { db } from '../../data/db'
 import { exerciseHistory, updateExercise } from '../../data/repo'
+import { loadProfile } from '../../domain/load'
 import { computeRecords } from '../../domain/records'
-import { categoryLabel, equipmentLabel, formatDate, formatKg, formatNumber, formatRest, muscleLabel, patternLabel, restProfileLabel, t } from '../../i18n'
+import { categoryLabel, equipmentLabel, formatDate, formatKg, formatNumber, formatRest, loadBasisLabel, loadTypeLabel, measureLabel, muscleLabel, patternLabel, restProfileLabel, t } from '../../i18n'
 import { useSafe } from '../shared'
 
 export function ExerciseDetailPage() {
@@ -41,6 +42,17 @@ export function ExerciseDetailPage() {
         <Info label={t('exercises.category')} value={categoryLabel(ex.category)} />
         <Info label={t('exercises.restProfile')} value={`${restProfileLabel(ex.restProfile)} · ${formatRest(Math.max(settings.minRestSec, settings.restProfiles[ex.restProfile]))}`} />
         <Info label={t('exercises.loadStep')} value={formatKg(ex.loadStepKg)} />
+        {(() => {
+          const lp = loadProfile(ex)
+          return (
+            <>
+              <Info label={t('exercises.loadType')} value={loadTypeLabel(lp.loadType)} />
+              {lp.loadType === 'external' && <Info label={t('exercises.loadBasis')} value={loadBasisLabel(lp.loadBasis)} />}
+              <Info label={t('exercises.unilateral')} value={lp.unilateral ? t('common.yes') : t('common.no')} />
+              <Info label={t('exercises.measure')} value={measureLabel(lp.measure)} />
+            </>
+          )
+        })()}
       </section>
 
       <section className="section">

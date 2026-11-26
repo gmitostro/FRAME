@@ -18,15 +18,16 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` needs a build first. It runs three suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability) and `e2e/layout.cjs` (four screen sizes and the summary). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
+`npm run e2e` needs a build first. It runs four suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary) and `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 57 tests)
+## Unit and persistence tests (Vitest, 71 tests)
 
 | File | Covers |
 |---|---|
 | `tests/timer.test.ts` | Remaining time from timestamps, long background gaps, pause/resume, double pause, +15/+30 s including after overrun; "Reiniciar" scenarios A–E (+30, +15, accumulated, none, paused), overrun without a late alert, legacy timers |
 | `tests/progression.test.ts` | Every double-progression branch, RIR tolerance, technique flag, incomplete sets, reps below range, step size by body region and equipment, step above 10% |
 | `tests/duration.test.ts` | Empty workout, breakdown (work, rest, warm-ups, transition), rest override clamped to minimum, ±5 min target band |
+| `tests/load.test.ts` | Library overrides point to real exercises, equipment defaults, library exceptions, user fields win, FRFB V1 fully classified, weight meaning; session snapshots (start, substitution, added exercise); RIR origin on working sets only; edits keep or set the origin; legacy sets stay unknown; program files validate the optional fields |
 | `tests/session.test.ts` | "Reiniciar" while the workout is paused (stays paused, resumes with the workout), Workout pause vs. a manually paused timer, logging a set while paused, recorded rest excluding pauses and legacy sets, set edit and delete (timer cleared), records of the day |
 | `tests/prefill.test.ts` | Warm-up vs working order, history warm-ups, suggested load, repeat of the session's last set, no-history fallback |
 | `tests/program.test.ts` | FRFB V1 validates against the library, weekly direct sets match the ficha's summary, estimated durations, invalid ficha rejection, import replaces workouts without touching history, export/import round-trip with custom exercises |
@@ -91,6 +92,28 @@ Measured automatic scroll on iPhone SE (after warm-ups / with timer):
 | 0.2.2 | 12 px | 94 px |
 
 On the mini, the 13 and the Pro Max it dropped from 151 px, 99 px and 0 px to 0 px.
+
+## Data e2e (`e2e/data.cjs`, v0.3)
+
+1. Library detail shows the classification (Remada unilateral: external, per dumbbell, unilateral, reps).
+2. A custom exercise saved as "assisted".
+3. Logger captions "Carga por halter (kg)" and "Reps por lado"; the pre-filled RIR shown as a suggestion; IndexedDB stores `default` for an untouched RIR and `user` for a tapped one; the session stores the classification snapshot.
+4. Set edit: reps-only keeps `default`, choosing an RIR stores `user`.
+5. Captions "Assistência (kg)" and "Carga adicional (kg)", and no weight field for Roda abdominal (stored 0 kg).
+6. A backup stripped of every v0.3 field (as an older app wrote it) restores: unknown fields stay unknown, captions fall back to the library, new sets record their origin.
+7. No console errors.
+
+Backup compatibility is also unit-tested in `tests/data.test.ts` (round-trip of the new fields and restore of a pre-v0.3 backup).
+
+## Results, 26/11/2026 (v0.3.0-alpha.1)
+
+| Check | Result |
+|---|---|
+| TypeScript (`tsc -b`, strict) | Pass, 0 errors |
+| Lint (oxlint) | Pass, 0 errors; 2 dev-only fast-refresh warnings |
+| Unit and persistence | 71/71 pass |
+| Production build + service worker | Pass |
+| E2E smoke / timer / layout / data | 20 / 11 / 6 / 7 checks pass |
 
 ## Results, 25/11/2026 (v0.2.2)
 

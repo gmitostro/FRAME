@@ -154,3 +154,44 @@ describe('backup', () => {
     expect(validateBackup(JSON.stringify(newer))).toMatchObject({ ok: false, error: 'newerVersion' })
   })
 })
+
+describe('v0.3 data foundation compatibility', () => {
+  it('round-trips RIR origin and load snapshots through a backup', async () => {
+    const t = await frameA()
+    await R.addTemplateExercise(t.id, 'remada-unilateral', db)
+    const session = await R.startSession(t.id, db)
+    await R.mutateSession(session.id, (s, now) => S.finishSession(S.addSet(s, 0, { kind: 'working', weightKg: 30, reps: 10, rir: 2, rirSource: 'user' }, now, newId, { warmupStartsTimer: false }), now), db)
+    const v = validateBackup(JSON.stringify(await createBackup(db)))
+    expect(v.ok).toBe(true)
+    if (!v.ok) return
+    await db.sessions.clear()
+    await restoreBackup(v.backup, db)
+    const done = (await R.completedSessions(db))[0]
+    expect(done.exercises[0].sets[0].rirSource).toBe('user')
+    expect(done.exercises[0].loadProfile).toMatchObject({ loadBasis: 'perDumbbell', unilateral: true })
+  })
+
+  it('restores a pre-v0.3 backup (no RIR origin, no snapshots, no classification) and keeps working', async () => {
+    const t = await frameA()
+    await R.addTemplateExercise(t.id, 'remada-unilateral', db)
+    const session = await R.startSession(t.id, db)
+    await R.mutateSession(session.id, (s, now) => S.finishSession(S.addSet(s, 0, { kind: 'working', weightKg: 30, reps: 10, rir: 2, rirSource: 'default' }, now, newId, { warmupStartsTimer: false }), now), db)
+    const backup = JSON.parse(JSON.stringify(await createBackup(db)))
+    // strip every v0.3 field, as an older app would have written it
+    for (const s of backup.data.sessions) for (const e of s.exercises) {
+      delete e.loadProfile
+      for (const x of e.sets) delete x.rirSource
+    }
+    for (const e of backup.data.exercises) for (const f of ['loadType', 'loadBasis', 'unilateral', 'measure']) delete e[f]
+    const v = validateBackup(JSON.stringify(backup))
+    expect(v.ok).toBe(true)
+    if (!v.ok) return
+    await restoreBackup(v.backup, db)
+    const last = await R.lastPerformance('remada-unilateral', db)
+    expect(last?.working[0]).toMatchObject({ weightKg: 30, reps: 10, rir: 2 })
+    expect(last?.working[0].rirSource).toBeUndefined() // unknown, not invented
+    // a new session after restore gets a snapshot from the library classification
+    const next = await R.startSession(t.id, db)
+    expect(next.exercises.at(-1)!.loadProfile).toMatchObject({ loadBasis: 'perDumbbell', unilateral: true })
+  })
+})

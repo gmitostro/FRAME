@@ -6,16 +6,19 @@ import { Stepper, Switch } from '../../components/Stepper'
 import { useToast } from '../../components/Toast'
 import { db } from '../../data/db'
 import { createExercise, updateExercise, type NewExercise } from '../../data/repo'
+import { loadProfile, weightMeaning } from '../../domain/load'
 import {
   EQUIPMENT,
   EXERCISE_CATEGORIES,
   MOVEMENT_PATTERNS,
   MUSCLE_GROUPS,
   REST_PROFILES,
+  LOAD_TYPES,
+  LOAD_BASES,
   type Exercise,
   type MuscleGroup,
 } from '../../domain/types'
-import { categoryLabel, equipmentLabel, muscleLabel, patternLabel, restProfileLabel, t } from '../../i18n'
+import { categoryLabel, equipmentLabel, loadBasisLabel, loadTypeLabel, muscleLabel, patternLabel, restProfileLabel, t } from '../../i18n'
 import { useSafe } from '../shared'
 
 const EMPTY: NewExercise = {
@@ -38,16 +41,24 @@ export function ExerciseFormPage() {
   return <ExerciseForm key={editing?.id ?? 'new'} id={id} editing={editing} />
 }
 
+/** Classification shown in the form: the effective one (explicit, library or equipment default). */
+function classification(ex: Pick<Exercise, 'id' | 'equipment' | 'loadType' | 'loadBasis' | 'unilateral' | 'measure'>) {
+  const p = loadProfile(ex)
+  return { loadType: p.loadType, loadBasis: p.loadBasis, unilateral: p.unilateral, measure: p.measure }
+}
+
 function toForm(ex: Exercise | null): NewExercise {
-  if (!ex) return EMPTY
+  if (!ex) return { ...EMPTY, ...classification({ id: '', equipment: EMPTY.equipment }) }
   const { id: _id, isCustom: _c, createdAt: _a, updatedAt: _u, ...rest } = ex
   void [_id, _c, _a, _u]
-  return { ...EMPTY, ...rest }
+  return { ...EMPTY, ...rest, ...classification(ex) }
 }
 
 function ExerciseForm({ id, editing }: { id?: string; editing: Exercise | null }) {
   const [form, setForm] = useState<NewExercise>(() => toForm(editing))
   const [error, setError] = useState<string | null>(null)
+  // Until the user picks a load type/basis, follow the equipment's default.
+  const [classTouched, setClassTouched] = useState(Boolean(editing?.loadType || editing?.loadBasis))
   const navigate = useNavigate()
   const toast = useToast()
   const safe = useSafe()
@@ -105,7 +116,19 @@ function ExerciseForm({ id, editing }: { id?: string; editing: Exercise | null }
       <section className="card">
         <div className="field">
           <label htmlFor="ex-eq">{t('exercises.equipment')}</label>
-          <select id="ex-eq" className="select" value={form.equipment} onChange={(e) => set('equipment', e.target.value as NewExercise['equipment'])}>
+          <select
+            id="ex-eq"
+            className="select"
+            value={form.equipment}
+            onChange={(e) => {
+              const equipment = e.target.value as NewExercise['equipment']
+              setForm((f) => {
+                if (classTouched) return { ...f, equipment }
+                const c = classification({ id: editing?.id ?? '', equipment })
+                return { ...f, equipment, loadType: c.loadType, loadBasis: c.loadBasis }
+              })
+            }}
+          >
             {EQUIPMENT.map((x) => <option key={x} value={x}>{equipmentLabel(x)}</option>)}
           </select>
         </div>
@@ -136,6 +159,49 @@ function ExerciseForm({ id, editing }: { id?: string; editing: Exercise | null }
         <div className="switch-row">
           <span>{t('exercises.lowerBody')}</span>
           <Switch checked={form.lowerBody} onChange={(v) => set('lowerBody', v)} label={t('exercises.lowerBody')} />
+        </div>
+      </section>
+      <section className="card">
+        <div className="field">
+          <label htmlFor="ex-load-type">{t('exercises.loadType')}</label>
+          <select
+            id="ex-load-type"
+            className="select"
+            value={form.loadType}
+            onChange={(e) => {
+              setClassTouched(true)
+              set('loadType', e.target.value as NewExercise['loadType'])
+            }}
+          >
+            {LOAD_TYPES.map((x) => <option key={x} value={x}>{loadTypeLabel(x)}</option>)}
+          </select>
+        </div>
+        {form.loadType === 'external' && (
+          <div className="field">
+            <span className="field-label">{t('exercises.loadBasis')}</span>
+            <div className="segmented" role="group" aria-label={t('exercises.loadBasis')}>
+              {LOAD_BASES.map((b) => (
+                <button
+                  key={b}
+                  aria-pressed={form.loadBasis === b}
+                  onClick={() => {
+                    setClassTouched(true)
+                    set('loadBasis', b)
+                  }}
+                >
+                  {loadBasisLabel(b)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <span className="field-note">{t(`exercises.loadHelp.${weightMeaning(loadProfile({ id: '', equipment: form.equipment, loadType: form.loadType, loadBasis: form.loadBasis }))}`)}</span>
+        <div className="switch-row">
+          <span className="stack" style={{ gap: 2 }}>
+            <span>{t('exercises.unilateral')}</span>
+            <span className="xs faint">{t('exercises.unilateralHelp')}</span>
+          </span>
+          <Switch checked={Boolean(form.unilateral)} onChange={(v) => set('unilateral', v)} label={t('exercises.unilateral')} />
         </div>
       </section>
       <button className="btn btn-primary btn-lg btn-block" onClick={save}>{t('common.save')}</button>

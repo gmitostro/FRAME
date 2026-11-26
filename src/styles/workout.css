@@ -459,3 +459,14 @@ button.set-row:active {
   text-align: center;
   padding: var(--s-8) 0 var(--s-4);
 }
+
+/* RIR pre-filled but not confirmed by the user (v0.3 data quality) */
+.rir-seg button.suggested[aria-pressed='true'] {
+  background: transparent;
+  color: var(--accent-strong);
+  box-shadow: inset 0 0 0 1.5px var(--accent-line);
+}
+
+.logger-grid.single {
+  grid-template-columns: 1fr;
+}

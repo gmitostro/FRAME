@@ -12,11 +12,25 @@ As regras abaixo estão implementadas em `src/domain/`. IDs entre colchetes apon
 
 Ao adicionar um exercício a um treino, o app sugere valores iniciais editáveis: 2 séries efetivas (seu hábito), 6–10 repetições e RIR 2 [STR-05]. O aquecimento depende do perfil: 2 séries para multiarticular pesado, 1 para moderado e 0 para isolado. **Ajuste.**
 
+## Como registrar a carga (v0.3)
+
+A tela de registro diz o que o número de carga significa em cada exercício:
+- **Carga:** carga total (barra + anilhas, pilha da máquina ou da polia).
+- **Carga por halter:** o peso de um halter.
+- **Carga por lado:** as anilhas de um lado.
+- **Carga adicional:** peso corporal; registre só o que foi acrescentado (0 = só o corpo).
+- **Assistência:** a assistência da máquina.
+
+Em exercícios **sem carga mensurável** (ex.: roda abdominal), o campo de carga não aparece.
+
+"Reps por lado" aparece em exercícios **unilaterais**. Tudo é editável em Exercícios → (exercício) → editar.
+
 ## Esforço (RIR)
 
 - RIR = repetições que ainda sobravam. Escala: RPE 8 = RIR 2 [STR-29].
 - Padrão de 2–3 RIR; ir à falha não é necessário [STR-05]. Quão perto da falha é melhor para hipertrofia é **contestado** [STR-28].
 - O RIR registrado costuma errar por cerca de 1 repetição [STR-32]. Por isso a tolerância de RIR padrão é 1 (configurável de 0 a 2).
+- **Origem do RIR (v0.3):** o RIR vem pré-preenchido para não exigir toque extra, mas aparece contornado com "Sugerido: toque para confirmar". O app grava se você confirmou (toque) ou manteve o pré-preenchido. Séries anteriores à v0.3 ficam com origem desconhecida. O futuro motor de progressão só deve usar RIR confirmado.
 
 ## Dupla progressão (`progression.ts`)
 

@@ -73,6 +73,32 @@ export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number]
 export const REST_PROFILES = ['heavyCompound', 'moderateCompound', 'isolation', 'lightIsolation'] as const
 export type RestProfileId = (typeof REST_PROFILES)[number]
 
+/**
+ * How the load of an exercise is made and what the logged weight means.
+ * - external: barbell, dumbbells, machine, cable... weight = external load
+ * - bodyweight: body plus optional added load; weight = added load (0 = none)
+ * - assisted: body minus machine assistance; weight = assistance
+ * - none: no quantifiable load; weight is not used
+ */
+export const LOAD_TYPES = ['external', 'bodyweight', 'assisted', 'none'] as const
+export type LoadType = (typeof LOAD_TYPES)[number]
+
+/** For external load: what number is logged. */
+export const LOAD_BASES = ['total', 'perDumbbell', 'perSide'] as const
+export type LoadBasis = (typeof LOAD_BASES)[number]
+
+/** What a set counts. Only repetitions can be logged today. */
+export const MEASURES = ['reps', 'time'] as const
+export type Measure = (typeof MEASURES)[number]
+
+export interface LoadProfile {
+  loadType: LoadType
+  loadBasis: LoadBasis
+  /** One side at a time: load and reps are per side. */
+  unilateral: boolean
+  measure: Measure
+}
+
 export interface Exercise {
   id: string
   namePt: string
@@ -87,6 +113,15 @@ export interface Exercise {
   loadStepKg: number
   /** Lower-body multi-joint lifts use the larger progression step. */
   lowerBody: boolean
+  /**
+   * Load classification. Optional: when absent the app derives it from the
+   * equipment and the built-in library (domain/load.ts), so library fixes
+   * reach existing installs. Saved here only when the user edits it.
+   */
+  loadType?: LoadType
+  loadBasis?: LoadBasis
+  unilateral?: boolean
+  measure?: Measure
   cues?: string[]
   commonMistakes?: string[]
   notes?: string
@@ -133,13 +168,21 @@ export interface WorkoutTemplate {
 
 export type SetKind = 'warmup' | 'working'
 
+/** Whether the RIR was chosen by the user or left as the pre-filled value. */
+export type RirSource = 'user' | 'default'
+
 export interface SetLog {
   id: string
   kind: SetKind
   weightKg: number
   reps: number
-  /** Reps in reserve reported by the user; null when not recorded. */
+  /** Reps in reserve; null when not recorded (always null for warm-ups). */
   rir: number | null
+  /**
+   * Where the RIR came from. Absent on sets logged before v0.3 (unknown):
+   * those values may be the pre-filled default and must not be trusted.
+   */
+  rirSource?: RirSource
   /** User flagged poor technique / momentum: excluded from progression. */
   formIssue?: boolean
   completedAt: number
@@ -168,6 +211,8 @@ export interface SessionExercise {
   /** Set when this entry replaced another exercise during the session. */
   substitutedFor?: { exerciseId: string; name: string }
   prescription: Prescription
+  /** Load classification at the time of the session (absent before v0.3). */
+  loadProfile?: LoadProfile
   status: SessionExerciseStatus
   sets: SetLog[]
   notes?: string

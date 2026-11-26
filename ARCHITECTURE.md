@@ -57,7 +57,28 @@ Training rules live in `src/domain`. UI components call them and never hold rule
 - `Exercise`: pt-BR/EN names, primary/secondary muscles, equipment, movement pattern, category, rest profile, smallest load step, lower-body flag, notes, `isCustom`.
 - `Program` and `WorkoutTemplate`: name, weekday (0 = Sunday), order, notes. Each `TemplateExercise` holds working sets, warm-up sets, rep range, RIR target and a rest override.
 - `WorkoutSession`: status (`active` | `completed` | `discarded`), start/end, pause bookkeeping, current exercise, `restTimer`, and `exercises[]`. Each entry stores a **snapshot** of the name and prescription, its status and its `SetLog[]`. Editing or deleting a template never changes history. `exerciseIds` is a multi-entry index for exercise history queries.
-- `SetLog`: kind (`warmup` | `working`), load, reps, RIR, technique flag, timestamp, actual rest before the set.
+- `SetLog`: kind (`warmup` | `working`), load, reps, RIR, `rirSource` (`user` = tapped, `default` = pre-fill kept; absent = logged before v0.3, unknown), technique flag, timestamp, actual rest before the set.
+- `SessionExercise.loadProfile`: snapshot of the exercise's load classification when the session ran (absent before v0.3).
+
+### Load classification (v0.3)
+
+`Exercise.loadType`, `loadBasis`, `unilateral` and `measure` are optional. The effective value is resolved by `domain/load.ts` in this order:
+1. explicit fields saved on the exercise (set when the user edits it in the form);
+2. the built-in library table (`LIBRARY_LOAD_OVERRIDES`, e.g. unilateral rows);
+3. the equipment default: `bodyweight` → bodyweight, `band` → none, else external; dumbbell/kettlebell → per dumbbell, else total.
+
+The table lives in code, so corrections reach existing installs without a migration. What the logged weight means:
+
+| Classification | Logged weight |
+|---|---|
+| external · total | total load: barbell + plates, machine or cable stack |
+| external · perDumbbell | one dumbbell |
+| external · perSide | plates on one side |
+| bodyweight | added load only (0 = body only) |
+| assisted | machine assistance |
+| none | not logged (stored as 0) |
+
+`unilateral` means load and reps are per side. `measure: 'time'` exists in the model but time cannot be logged yet. Each session stores a snapshot (`SessionExercise.loadProfile`) so history keeps the meaning it had when it was logged; sessions from before v0.3 fall back to the current classification.
 - `Settings`: singleton.
 
 ## Rest timer

@@ -1,4 +1,4 @@
-import type { Equipment, ExerciseCategory, MovementPattern, MuscleGroup, RestProfileId } from '../domain/types'
+import type { Equipment, ExerciseCategory, LoadBasis, LoadType, Measure, MovementPattern, MuscleGroup, RestProfileId } from '../domain/types'
 import { ptBR, type Dictionary } from './pt-BR'
 
 /** Dotted paths to string leaves of the dictionary, checked at compile time. */
@@ -24,6 +24,9 @@ export const equipmentLabel = (e: Equipment) => dict.equipment[e]
 export const patternLabel = (p: MovementPattern) => dict.patterns[p]
 export const categoryLabel = (c: ExerciseCategory) => dict.categories[c]
 export const restProfileLabel = (r: RestProfileId) => dict.restProfiles[r]
+export const loadTypeLabel = (l: LoadType) => dict.exercises.loadTypes[l]
+export const loadBasisLabel = (b: LoadBasis) => dict.exercises.loadBases[b]
+export const measureLabel = (m: Measure) => dict.exercises.measures[m]
 export const weekdayLong = (d: number) => dict.weekdays.long[d] ?? ''
 export const weekdayShort = (d: number) => dict.weekdays.short[d] ?? ''
 export const weekdayInitial = (d: number) => dict.weekdays.initial[d] ?? ''

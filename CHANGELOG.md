@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0-alpha.1 · 26/11/2026 · Data Foundation, etapa 1
+
+### Added
+- RIR origin per working set (`rirSource`: tapped by the user or pre-fill kept). The pre-filled RIR is shown outlined ("Sugerido: toque para confirmar") until tapped; logging still takes one tap.
+- Load classification per exercise: load type (external, bodyweight + added, assisted, none), how the load is logged (total, per dumbbell, per side), unilateral, measure. Resolved from user edits, then the built-in library table, then the equipment, with no migration.
+- Classification snapshot in every session exercise, so history keeps its meaning if the classification changes later.
+- Captions in the set logger and set editor follow the classification ("Carga por halter (kg)", "Assistência (kg)", "Reps por lado"); no weight field for no-load exercises.
+- Exercise form and detail show and edit the classification.
+- Program files accept and validate the optional classification fields.
+- Tests: 14 new unit tests and a fourth e2e suite (`e2e/data.cjs`) covering capture, captions and pre-v0.3 data.
+
+### Not changed
+- FRFB program, progression rules, history and backup format (fields are optional; old backups restore as before).
+
 ## 0.2.3 · 26/11/2026 · Reliability & Polish
 
 ### Fixed

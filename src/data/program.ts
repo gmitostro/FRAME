@@ -1,5 +1,5 @@
 import type { Exercise, Program, TemplateExercise } from '../domain/types'
-import { MUSCLE_GROUPS, EQUIPMENT, MOVEMENT_PATTERNS, EXERCISE_CATEGORIES, REST_PROFILES } from '../domain/types'
+import { MUSCLE_GROUPS, EQUIPMENT, MOVEMENT_PATTERNS, EXERCISE_CATEGORIES, REST_PROFILES, LOAD_TYPES, LOAD_BASES, MEASURES } from '../domain/types'
 import { newId } from '../lib/id'
 import { db, type FrameDB } from './db'
 import { templatesFromProgram } from './seed/program'
@@ -57,7 +57,12 @@ function validCustom(e: unknown): e is CustomExerciseDef {
     (EXERCISE_CATEGORIES as readonly string[]).includes(e.category as string) &&
     (REST_PROFILES as readonly string[]).includes(e.restProfile as string) &&
     typeof e.loadStepKg === 'number' &&
-    typeof e.lowerBody === 'boolean'
+    typeof e.lowerBody === 'boolean' &&
+    // optional load classification (v0.3): valid when present
+    (e.loadType === undefined || (LOAD_TYPES as readonly string[]).includes(e.loadType as string)) &&
+    (e.loadBasis === undefined || (LOAD_BASES as readonly string[]).includes(e.loadBasis as string)) &&
+    (e.unilateral === undefined || typeof e.unilateral === 'boolean') &&
+    (e.measure === undefined || (MEASURES as readonly string[]).includes(e.measure as string))
   )
 }
 

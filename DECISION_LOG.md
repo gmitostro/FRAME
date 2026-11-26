@@ -83,6 +83,18 @@ Nada foi removido. Medição antes e depois em `TESTING.md`.
 
 **Implementação:** a regra só restaura `durationMs` ao valor prescrito. Não há estado novo.
 
+### D-016 · 26/11/2026 · Origem do RIR sem exigir toque extra
+- O RIR continua pré-preenchido (registro com um toque), mas aparece só contornado até você tocar, e o app grava a origem: `user` ou `default`.
+- Séries antigas ficam sem origem (desconhecida): o dado não é reconstruível e não é inventado.
+- Alternativa descartada: RIR em branco obrigatório. Seria mais confiável, mas adicionaria um toque a cada série.
+
+### D-017 · 26/11/2026 · Classificação de carga no código, cópia no treino
+- Os campos novos do exercício são opcionais. O valor efetivo vem da edição do usuário, depois da tabela da biblioteca no código, depois do equipamento.
+- Sem migração de banco. Correções na tabela chegam a quem já instalou.
+- Cada treino guarda uma cópia da classificação (como já faz com a prescrição), então mudar a convenção depois não muda o sentido do histórico.
+- Convenção para halteres: **por halter**.
+- Máquinas de anilhas (leg press, hack) ficam como **carga total** por padrão; quem conta "por lado" muda no exercício.
+
 ## Treino
 
 ### T-001 · 24/11/2026 · Esqueleto FRFB sem exercícios

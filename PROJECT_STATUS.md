@@ -1,6 +1,6 @@
 # Status do projeto
 
-Atualizado em 25/11/2026 · versão 0.2.2
+Atualizado em 26/11/2026 · versão 0.3.0-alpha.1
 
 ## Fases
 
@@ -19,7 +19,7 @@ Atualizado em 25/11/2026 · versão 0.2.2
 | 10 · Evidence Lab (interface) | Não iniciada; índice de evidências em `EVIDENCE_LIBRARY.md` |
 | 11 · Validação final | Não iniciada |
 
-**Fase atual:** 6 (progressão e análises).
+**Fase atual:** v0.3 Data Foundation. A etapa 1 (origem do RIR, classificação de carga, cópia no treino) está concluída; a etapa 2 (camada de exposições do histórico) ainda não começou.
 
 ## Funcionalidades concluídas
 
@@ -74,8 +74,8 @@ Atualizado em 25/11/2026 · versão 0.2.2
 
 Ver `TESTING.md`. Resumo desta versão:
 - typecheck, lint e build sem erros;
-- 47 testes unitários passando;
-- três testes ponta a ponta passando: fluxo completo (19 verificações), cronômetro (10) e layout em 4 tamanhos de iPhone (6).
+- 71 testes unitários passando;
+- quatro testes ponta a ponta passando: fluxo completo (20 verificações), cronômetro (11), layout em 4 tamanhos de iPhone (6) e dados da v0.3 (7).
 
 ## Próximos passos
 
