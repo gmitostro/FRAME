@@ -20,6 +20,33 @@ function audio(): AudioContext | null {
 }
 
 /**
+ * iOS can leave the context reporting "running" after the app returns from
+ * the background while producing no sound (seen on iOS 18.7, 27/11/2026).
+ * So on every return the old context is closed and the next tap creates a
+ * fresh one. The state at return is kept for the device check.
+ */
+let stateAtReturn: string | null = null
+
+export function resetAudio(): void {
+  const old = ctx
+  ctx = null
+  if (old) void old.close().catch(() => {})
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !ctx) return
+    stateAtReturn = ctx.state
+    resetAudio()
+  })
+}
+
+/** Audio state found on the last return from the background, before the reset. */
+export function audioStateAtReturn(): string | null {
+  return stateAtReturn
+}
+
+/**
  * Starts or revives the audio context. Must run inside a user gesture on iOS.
  * iOS also leaves the context "interrupted" (not only "suspended") after the
  * app was in the background or a call came in, so resume on any non-running

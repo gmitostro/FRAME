@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Sound after returning from the background. On the iPhone (iOS 18.7) the audio context could report "running" after the app came back while playing nothing (2 of 3 device-check runs on 27/11/2026). The app now closes the audio context on every return and the next tap creates a fresh one. The device check records the state found before the reset.
+
 ### Added
 - Backup reminder on Início when finished workouts are not in any backup and the last one is 7+ days old (or there was never one), with an "Exportar backup agora" shortcut.
 - Ajustes › Dados shows the last backup date and how many workouts came after it.

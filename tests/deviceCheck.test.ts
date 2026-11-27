@@ -113,6 +113,6 @@ describe('device check storage', () => {
     const r = await createReport(env, db, 1)
     const backup = await createBackup(db)
     const row = backup.data.meta.find((m) => m.key === 'deviceChecks')
-    expect((row?.value as D.DeviceCheckReport[])[0].id).toBe(r.id)
+    expect((row?.value as D.DeviceCheckReport[] | undefined)?.[0]?.id).toBe(r.id)
   })
 })

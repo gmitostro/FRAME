@@ -19,7 +19,7 @@ import {
   type ScreenCheck,
 } from '../../domain/deviceCheck'
 import { downloadText } from '../../lib/download'
-import { audioState, playRestEndSound, unlockAudio } from '../../lib/feedback'
+import { audioState, audioStateAtReturn, playRestEndSound, unlockAudio } from '../../lib/feedback'
 import { newId } from '../../lib/id'
 import { formatClock, formatDate, formatTime, t } from '../../i18n'
 import { useSafe } from '../shared'
@@ -509,7 +509,7 @@ function BackgroundCard({ report, save }: CardProps) {
           hiddenAt,
           returnedAt: at,
           reloaded: false,
-          audioStateOnReturn: audioState() ?? 'none',
+          audioStateOnReturn: audioStateAtReturn() ?? 'none',
           remainingOnReturnMs: backgroundRemainingMs(r.background as BackgroundCheck, at),
           at,
         },

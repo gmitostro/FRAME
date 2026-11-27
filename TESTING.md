@@ -126,7 +126,7 @@ Web Audio and Wake Lock are instrumented and page visibility is simulated. It pr
 | Lint (oxlint) | Pass, 0 errors; 2 dev-only fast-refresh warnings |
 | Unit and persistence | 81/81 pass |
 | Production build + service worker | Pass |
-| E2E timer / layout / data / device | Pass |
+| E2E timer / layout / data / device | Pass (device also checks a fresh audio context after returning from the background) |
 | E2E smoke | Pass with the clock on a training day (Monday). On Friday to Sunday it fails at "Treino de hoje" because the suite uses the real date; this predates 0.3.0-alpha.2 |
 
 ## Backup reminder e2e (`e2e/backup.cjs`)

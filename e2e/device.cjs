@@ -47,8 +47,15 @@ async function startServer() {
   const context = await browser.newContext({ ...iphone, deviceScaleFactor: 1, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', acceptDownloads: true })
   await context.addInitScript(() => {
     window.__osc = 0
+    window.__ctx = 0
     const C = window.AudioContext
     if (C) {
+      window.AudioContext = class extends C {
+        constructor(...args) {
+          super(...args)
+          window.__ctx++
+        }
+      }
       const orig = C.prototype.createOscillator
       C.prototype.createOscillator = function () {
         window.__osc++
@@ -166,11 +173,14 @@ async function startServer() {
     const bg = await lines('background')
     assert(/terminou há 0:10/.test(bg) && /voltou sem recarregar/.test(bg), `background details: ${bg}`)
     const before = await tones()
+    const ctxBefore = await page.evaluate(() => window.__ctx)
     await card('background').getByRole('button', { name: 'Tocar som' }).click()
     assert((await tones()) === before + 1, 'tone after return')
+    assert((await page.evaluate(() => window.__ctx)) === ctxBefore + 1, 'a fresh audio context after returning from the background')
+    assert(/Áudio ao voltar: (running|suspended)/.test(bg), `audio state recorded before the reset: ${bg}`)
     await card('background').getByRole('button', { name: 'Ouvi', exact: true }).click()
     await until(async () => (await badge('background')) === 'OK', 'background pass')
-    log('background: 0:40 away, countdown "terminou há 0:10", sound after return = OK')
+    log('background: 0:40 away, countdown "terminou há 0:10", fresh audio context, sound after return = OK')
 
     // Too short away
     await card('background').getByRole('button', { name: 'Refazer' }).click()
