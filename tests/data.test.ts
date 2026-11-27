@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createBackup, restoreBackup, validateBackup } from '../src/data/backup'
+import { createBackup, getLastBackupAt, markBackupExported, restoreBackup, validateBackup } from '../src/data/backup'
 import { FrameDB, syncExerciseSeed } from '../src/data/db'
 import * as R from '../src/data/repo'
 import * as S from '../src/domain/session'
@@ -152,6 +152,20 @@ describe('backup', () => {
     const newer = JSON.parse(json)
     newer.version = 99
     expect(validateBackup(JSON.stringify(newer))).toMatchObject({ ok: false, error: 'newerVersion' })
+  })
+
+  it('records the last backup time and takes it from the file on restore', async () => {
+    expect(await getLastBackupAt(db)).toBeNull()
+    await markBackupExported(1_000, db)
+    expect(await getLastBackupAt(db)).toBe(1_000)
+
+    const file = await createBackup(db)
+    file.exportedAt = new Date(5_000).toISOString()
+    const v = validateBackup(JSON.stringify(file))
+    if (!v.ok) throw new Error('invalid')
+    await markBackupExported(9_000, db)
+    await restoreBackup(v.backup, db)
+    expect(await getLastBackupAt(db)).toBe(5_000)
   })
 })
 

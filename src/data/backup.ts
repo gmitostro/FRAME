@@ -129,8 +129,28 @@ export async function restoreBackup(backup: BackupFile, database: FrameDB = db):
       await database.sessions.bulkPut(d.sessions)
       if (d.settings.length) await database.settings.bulkPut(d.settings)
       if (d.meta.length) await database.meta.bulkPut(d.meta)
+      // The restored data is exactly what this file holds, so its export time is the last backup.
+      const exportedAt = Date.parse(backup.exportedAt)
+      if (Number.isFinite(exportedAt)) await database.meta.put({ key: LAST_BACKUP_KEY, value: exportedAt })
     },
   )
+}
+
+/** meta key holding the time (ms) of the last backup export on this device. */
+export const LAST_BACKUP_KEY = 'lastBackupAt'
+
+/**
+ * Records that a backup was exported. Called when the file is handed to the
+ * browser: on iOS the share sheet can still be cancelled, which the app
+ * cannot detect.
+ */
+export async function markBackupExported(at: number, database: FrameDB = db): Promise<void> {
+  await database.meta.put({ key: LAST_BACKUP_KEY, value: at })
+}
+
+export async function getLastBackupAt(database: FrameDB = db): Promise<number | null> {
+  const row = await database.meta.get(LAST_BACKUP_KEY)
+  return typeof row?.value === 'number' ? row.value : null
 }
 
 export function backupFileName(date = new Date()): string {
