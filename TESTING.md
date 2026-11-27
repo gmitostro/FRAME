@@ -20,7 +20,7 @@ npm run e2e
 
 `npm run e2e` needs a build first. It runs six suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary), `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility), `e2e/device.cjs` (device check screen) and `e2e/backup.cjs` (backup reminder). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 87 tests)
+## Unit and persistence tests (Vitest, 99 tests)
 
 | File | Covers |
 |---|---|

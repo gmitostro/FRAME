@@ -27,6 +27,7 @@ export const restProfileLabel = (r: RestProfileId) => dict.restProfiles[r]
 export const loadTypeLabel = (l: LoadType) => dict.exercises.loadTypes[l]
 export const loadBasisLabel = (b: LoadBasis) => dict.exercises.loadBases[b]
 export const measureLabel = (m: Measure) => dict.exercises.measures[m]
+export const volumeHowLines = (): readonly string[] => dict.volume.how
 export const weekdayLong = (d: number) => dict.weekdays.long[d] ?? ''
 export const weekdayShort = (d: number) => dict.weekdays.short[d] ?? ''
 export const weekdayInitial = (d: number) => dict.weekdays.initial[d] ?? ''
