@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Double progression on assisted exercises: the suggestion now reduces the machine assistance by one equipment step (never below 0) instead of adding assistance labeled as an increase. The reference is the most assisted set. At zero assistance the app holds and suggests the bodyweight version.
+
 ## 0.3.0-alpha.2 · 27/11/2026 · Device check
 
 ### Added

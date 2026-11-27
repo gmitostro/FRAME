@@ -121,7 +121,7 @@ function LiveWorkout({ session, settings, exMap }: { session: WorkoutSession; se
       : suggestProgression({
           prescription: current.prescription,
           lastWorkingSets: last?.working ?? [],
-          exercise,
+          exercise: { ...exercise, loadType: profile.loadType },
           rirTolerance: settings.rirTolerance,
         })
 
@@ -495,7 +495,9 @@ function ExerciseContext({ last, suggestion }: { last: Awaited<ReturnType<typeof
   if (!last || !suggestion || suggestion.kind === 'none') return <p className="prev-line faint">{t('workout.noHistory')}</p>
   const lastLine = `${t('workout.lastShort', { date: formatShortDate(last.date) })}: ${formatLastSets(last.working)}`
   if (suggestion.kind === 'increase') {
-    const delta = `+${formatNumber(suggestion.stepKg)} kg${suggestion.pct !== null ? ` · ${formatPct(suggestion.pct)}` : ''}`
+    const delta = suggestion.reducesAssistance
+      ? t('workout.suggestAssistDelta', { kg: formatNumber(suggestion.stepKg) })
+      : `+${formatNumber(suggestion.stepKg)} kg${suggestion.pct !== null ? ` · ${formatPct(suggestion.pct)}` : ''}`
     return (
       <div className="suggest up">
         <TrendingUp size={18} color="var(--accent)" style={{ marginTop: 3 }} />
@@ -505,7 +507,7 @@ function ExerciseContext({ last, suggestion }: { last: Awaited<ReturnType<typeof
             <span className="value">{`${formatKg(suggestion.toKg)} × ${suggestion.targetReps}`}</span>
             <span className="delta">{delta}</span>
           </div>
-          <span className="small muted">{t('workout.suggestIncreaseShort')}</span>
+          <span className="small muted">{t(suggestion.reducesAssistance ? 'workout.suggestReduceAssistShort' : 'workout.suggestIncreaseShort')}</span>
           {suggestion.stepAboveRange && <span className="small" style={{ color: 'var(--warn)' }}>{t('workout.suggestStepLarge')}</span>}
           <span className="xs faint num">{lastLine}</span>
         </div>
@@ -518,6 +520,7 @@ function ExerciseContext({ last, suggestion }: { last: Awaited<ReturnType<typeof
     formIssue: t('workout.holdForm'),
     incompleteSets: t('workout.holdIncomplete'),
     repsBelowMin: t('workout.holdBelowMin'),
+    noAssistanceLeft: t('workout.holdNoAssist'),
   }[suggestion.reason]
   return (
     <div className="suggest">
