@@ -1,4 +1,4 @@
-import type { Exercise, Prescription, SetLog } from './types'
+import type { Exercise, LoadType, Prescription, SetLog } from './types'
 
 /**
  * Double progression [STR-35]: keep the load until every prescribed working
@@ -7,9 +7,23 @@ import type { Exercise, Prescription, SetLog } from './types'
  * upper-body and small-muscle exercises [STR-13]. If reported RIR is clearly
  * lower than planned, hold the load [STR-30, STR-32]. The engine only
  * suggests; it never changes a prescription by itself.
+ *
+ * Assisted exercises log the machine assistance, so progressing means
+ * LESS weight: the reference is the most assisted set (the easiest one),
+ * and the step removes assistance by the equipment increment, never below
+ * zero. A percentage of the assistance says nothing about the load moved
+ * (body minus assistance, body weight unknown), so pct is null there.
+ * Engineering choice, not evidence: see TRAINING_SYSTEM.md.
  */
 
-export type HoldReason = 'buildReps' | 'rirBelowTarget' | 'formIssue' | 'incompleteSets' | 'repsBelowMin'
+export type HoldReason =
+  | 'buildReps'
+  | 'rirBelowTarget'
+  | 'formIssue'
+  | 'incompleteSets'
+  | 'repsBelowMin'
+  /** Assisted exercise already done with zero assistance. */
+  | 'noAssistanceLeft'
 
 export type ProgressionSuggestion =
   | { kind: 'none'; reason: 'noHistory' }
@@ -17,8 +31,11 @@ export type ProgressionSuggestion =
       kind: 'increase'
       fromKg: number
       toKg: number
+      /** Always positive; for assisted exercises it is removed, not added. */
       stepKg: number
-      /** Fraction (0.025 = 2.5%); null for bodyweight-only exercises. */
+      /** True for assisted exercises: toKg = fromKg - stepKg (less help, harder). */
+      reducesAssistance: boolean
+      /** Fraction (0.025 = 2.5%); null for bodyweight-only and assisted exercises. */
       pct: number | null
       /** True when the equipment step exceeds the 10% upper bound. */
       stepAboveRange: boolean
@@ -30,7 +47,8 @@ export interface ProgressionInput {
   prescription: Pick<Prescription, 'workingSets' | 'repMin' | 'repMax' | 'rirTarget'>
   /** Working sets from the most recent session with this exercise. */
   lastWorkingSets: SetLog[]
-  exercise: Pick<Exercise, 'loadStepKg' | 'lowerBody' | 'category'>
+  /** loadType must be the resolved one (loadProfile), not the raw field. */
+  exercise: Pick<Exercise, 'loadStepKg' | 'lowerBody' | 'category'> & { loadType?: LoadType }
   rirTolerance: number
 }
 
@@ -57,7 +75,10 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
   const sets = input.lastWorkingSets.filter((s) => s.kind === 'working')
   if (sets.length === 0) return { kind: 'none', reason: 'noHistory' }
 
-  const refKg = Math.min(...sets.map((s) => s.weightKg))
+  const assisted = exercise.loadType === 'assisted'
+  // Conservative reference: the easiest set (least load, or most assistance).
+  const weights = sets.map((s) => s.weightKg)
+  const refKg = assisted ? Math.max(...weights) : Math.min(...weights)
   const minReps = Math.min(...sets.map((s) => s.reps))
   const nextReps = Math.min(p.repMax, minReps + 1)
 
@@ -78,6 +99,24 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
     return { kind: 'hold', weightKg: refKg, targetReps: p.repMax, reason: 'rirBelowTarget' }
   }
 
+  if (assisted) {
+    if (refKg <= 0) {
+      return { kind: 'hold', weightKg: 0, targetReps: p.repMax, reason: 'noAssistanceLeft' }
+    }
+    const step = exercise.loadStepKg > 0 ? exercise.loadStepKg : 2.5
+    const toKg = Math.max(0, refKg - step)
+    return {
+      kind: 'increase',
+      fromKg: refKg,
+      toKg,
+      stepKg: refKg - toKg,
+      reducesAssistance: true,
+      pct: null,
+      stepAboveRange: false,
+      targetReps: p.repMin,
+    }
+  }
+
   const stepKg = loadIncrement(refKg, exercise)
   const pct = refKg > 0 ? stepKg / refKg : null
   return {
@@ -85,6 +124,7 @@ export function suggestProgression(input: ProgressionInput): ProgressionSuggesti
     fromKg: refKg,
     toKg: refKg + stepKg,
     stepKg,
+    reducesAssistance: false,
     pct,
     stepAboveRange: pct !== null && pct > MAX_STEP + 1e-9,
     targetReps: p.repMin,

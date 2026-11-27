@@ -53,6 +53,12 @@ Tamanho do aumento [STR-13]:
 
 Se o incremento passar de 10% (por exemplo, halteres leves), o app avisa e sugere completar mais repetições antes.
 
+**Exercícios assistidos** (o número registrado é a assistência): progredir é **reduzir** a assistência. **Ajuste**, não evidência:
+- a referência é a série com **mais** assistência (a mais fácil), e não a de menos;
+- a redução é de um incremento do equipamento, sem percentual (o percentual da assistência não diz quanto muda a carga movida, porque o peso corporal não é conhecido) e nunca abaixo de 0;
+- com 0 de assistência no topo da faixa, o app mantém e sugere passar para a versão com peso corporal;
+- as regras de manter (técnica, séries, faixa, RIR) são as mesmas.
+
 A sugestão nunca altera o treino. Ela pré-preenche a carga, que você pode mudar.
 
 ## Descanso
