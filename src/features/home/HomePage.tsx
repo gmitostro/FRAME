@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Clock, Dumbbell, Layers, Moon, Play, TriangleAlert } from 'lucide-react'
+import { BarChart3, Check, ChevronRight, Clock, Dumbbell, Layers, Moon, Play, TriangleAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveSession, useCompletedSessions, useExerciseMap, useNow, useProgram, useSettings } from '../../app/hooks'
 import { Brand } from '../../components/BrandMark'
@@ -126,6 +126,16 @@ export function HomePage() {
               <span className="stat-label">{t('home.workingSetsWeek')}</span>
             </div>
           </div>
+        </div>
+        <div className="list">
+          <Link to="/volume" className="list-row">
+            <BarChart3 size={20} className="faint" />
+            <span className="grow">
+              <span className="title" style={{ display: 'block' }}>{t('volume.link')}</span>
+              <span className="sub">{t('volume.linkSub')}</span>
+            </span>
+            <ChevronRight size={18} className="faint" />
+          </Link>
         </div>
       </section>
 

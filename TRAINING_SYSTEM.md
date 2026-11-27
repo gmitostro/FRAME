@@ -105,12 +105,15 @@ A meta é 60 min, com ±5 min contando como "dentro". Acima da meta, o app suger
 
 Reduzir séries ou esforço, sem parar de treinar [STR-37, STR-39]. A frequência típica em atletas é ~6 dias a cada 5–6 semanas [STR-38]. Para recreacionais, o deload deve ser feito quando os dados indicarem, não por calendário. A evidência de benefício é fraca.
 
-## Volume (Fase 6)
+## Volume (Fase 6, `volume.ts`)
 
-Ainda não implementado. O plano é separar:
-- séries diretas;
-- séries indiretas (contagem fracionada configurável, apresentada como aproximação);
-- aquecimentos (fora do volume).
+Tela "Volume por músculo", aberta pelo Início.
+- **Séries diretas:** séries efetivas de exercícios em que o músculo é o principal.
+- **Séries indiretas:** séries efetivas de exercícios em que o músculo aparece como secundário na biblioteca. Mostradas inteiras, nunca somadas às diretas e fora da comparação. A contagem fracionada continua como pesquisa pendente (EVIDENCE_LIBRARY, item 2).
+- Aquecimentos não contam. Séries com técnica comprometida contam, porque foram feitas (só ficam fora da progressão).
+- **Feito:** treinos concluídos com início na semana (segunda a domingo). **Ficha:** cada treino do programa ativo uma vez por semana.
+- **Comparação:** séries diretas da ficha contra ≥10 por semana [STR-02], com retornos decrescentes acima de ~20 [STR-04]. Faixa de partida, não meta individual.
+- **Prioridades** (Ajustes) aparecem primeiro, mesmo com zero séries; um aviso lista as que têm menos de 10 diretas na ficha.
 
 ## Recuperação (Fase 8)
 

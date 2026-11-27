@@ -1004,3 +1004,105 @@ a.list-row:active {
   width: 2px;
   background: var(--text-2);
 }
+
+/* ---------- Weekly volume per muscle ---------- */
+.volume-week {
+  padding: var(--s-1) 0;
+}
+
+.volume-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.volume-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.volume-bar .ref {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.07);
+  border-left: 1px dashed var(--text-3);
+  border-right: 1px dashed var(--text-3);
+}
+
+.volume-bar .planned,
+.volume-bar .done {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+}
+
+.volume-bar .planned {
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.volume-bar .done {
+  background: var(--accent);
+}
+
+.volume-nums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+}
+
+.volume-status {
+  color: var(--text-3);
+}
+
+.volume-status.warn {
+  color: var(--warn);
+}
+
+.volume-status.ok {
+  color: var(--accent-strong);
+}
+
+.volume-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+}
+
+.volume-legend .sw {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+  vertical-align: 0;
+  margin-right: 4px;
+}
+
+.volume-legend .sw.done {
+  background: var(--accent);
+}
+
+.volume-legend .sw.planned {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+
+.volume-legend .sw.ref {
+  background: rgba(255, 255, 255, 0.07);
+  border-left: 1px dashed var(--text-3);
+  border-right: 1px dashed var(--text-3);
+}
+
+.volume-how {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}

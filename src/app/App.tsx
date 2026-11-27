@@ -15,6 +15,7 @@ import { HomePage } from '../features/home/HomePage'
 import { ProgramPage } from '../features/program/ProgramPage'
 import { WorkoutEditorPage } from '../features/program/WorkoutEditorPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { VolumePage } from '../features/volume/VolumePage'
 import { ActiveWorkoutPage } from '../features/workout/ActiveWorkoutPage'
 import { WorkoutSummaryPage } from '../features/workout/WorkoutSummaryPage'
 import { formatClock, t } from '../i18n'
@@ -124,6 +125,7 @@ const router = createHashRouter([
       { path: '/historico', element: <HistoryPage /> },
       { path: '/historico/:id', element: <SessionDetailPage /> },
       { path: '/ajustes', element: <SettingsPage /> },
+      { path: '/volume', element: <VolumePage /> },
     ],
   },
   {
