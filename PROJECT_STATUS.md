@@ -1,6 +1,6 @@
 # Status do projeto
 
-Atualizado em 26/11/2026 · versão 0.3.0-alpha.1
+Atualizado em 27/11/2026 · versão 0.3.0-alpha.2
 
 ## Fases
 
@@ -10,7 +10,7 @@ Atualizado em 26/11/2026 · versão 0.3.0-alpha.1
 | 1 · Fundação (arquitetura, design system, localização, navegação, modelos, persistência, PWA) | Concluída |
 | 2 · Dashboard | Concluída (indicadores básicos) |
 | 3 · Motor de treino | Concluída |
-| 4 · Cronômetro | Concluída (som e vibração não verificados no iPhone) |
+| 4 · Cronômetro | Concluída. Verificado no iPhone em 27/11/2026 pela tela de verificação: som, tela ligada e retorno do segundo plano. Falta um treino real. Vibração não existe no Safari |
 | 5 · Exercícios e histórico | Parcial: biblioteca, busca, filtros, personalizados, histórico e recordes prontos; instruções de execução e erros comuns ainda vazios |
 | 6 · Progressão e análises | Parcial: dupla progressão e sugestão de carga prontas; volume semanal por músculo pronto; gráficos e consistência pendentes |
 | 7 · Métodos avançados | Não iniciada |

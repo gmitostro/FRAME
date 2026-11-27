@@ -108,15 +108,15 @@ The table lives in code, so corrections reach existing installs without a migrat
 
 ## iOS / PWA platform limits
 
-Verified in browsers, still to be confirmed on a physical iPhone:
+Verified in browsers. Rows marked "iPhone 27/11" were checked with the device check on iOS 18.7 (installed app); the rest are still to be confirmed on the device:
 
 | Capability | iOS installed PWA | What FRAME does |
 |---|---|---|
 | JavaScript in background or with the screen locked | Suspended | Timers stop; time is recomputed from timestamps on return |
 | Sound at rest end while backgrounded or locked | Not possible from the page | No late beep; overrun shown on return |
-| Sound in foreground | Web Audio; needs a prior tap; muted by the silent switch | Unlocked on any tap; revived from "interrupted" |
+| Sound in foreground | Web Audio; needs a prior tap. iPhone 27/11: plays with the silent switch on, and plays 5 s after a tap without a new gesture. After a return from the background the context can report "running" and stay silent | Unlocked on any tap; the context is closed on every return from the background and the next tap creates a fresh one (0.3.0-alpha.2+) |
 | Vibration API | Not available in Safari | Feature-detected; no effect on iPhone |
-| Screen Wake Lock | Available in recent iOS; behaviour in installed web apps has varied between iOS versions | Requested during the workout; must be checked on the device |
+| Screen Wake Lock | Available in recent iOS. iPhone 27/11: works in the installed app (screen on for 1:00 with auto-lock at 30 s) | Requested during the workout |
 | Scheduled local notifications | Not available (no Notification Triggers) | None |
 | Web Push (iOS 16.4+, installed app, permission) | Needs a push server to send the message | Not implemented. A server cannot time a rest alert reliably to the second, so it suits training reminders (Phase 9), not rest alarms |
 
