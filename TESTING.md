@@ -179,14 +179,16 @@ The rule itself (`src/domain/backup.ts`) is unit-tested in `tests/backup-reminde
 
 ## Verification status
 
+iPhone results come from the in-app device check (Ajustes › Sobre › Verificar este aparelho) on an iPhone with iOS 18.7, app installed from the home screen. A "Persistent storage" row: `persist()` granted, write/read ok (27/11/2026); data surviving days without use is not yet checked.
+
 | Area | Implemented | Browser (Chromium) | iPhone |
 |---|---|---|---|
 | Workout logging, persistence, reload | Yes | Tested | Not tested |
 | Rest timer (foreground, any tab) | Yes | Tested (e2e, controlled clock) | Not tested |
-| Rest timer after background/lock | Yes (timestamps) | Simulated by a clock jump | Not tested |
-| End-of-rest sound | Yes | Attempt counted (instrumented); audio not heard | Not tested; silent switch mutes it |
+| Rest timer after background/lock | Yes (timestamps) | Simulated by a clock jump | Device check, 27/11/2026: correct after 0:31, 1:04, 1:23 and 4 min away, no reload. Not yet in a real workout |
+| End-of-rest sound | Yes | Attempt counted (instrumented); audio not heard | Device check, 27/11/2026: plays after a tap and 5 s later without a tap; plays with the silent switch on. After returning from the background it was silent in 2 of 3 runs (0.3.0-alpha.2); fixed by recreating the audio context on return, then passed after 1:04 and 4 min away |
 | Vibration | Yes (feature-detected) | n/a | Not supported by iOS Safari |
-| Keep screen on (Wake Lock) | Yes, whole workout | Requests/releases counted (instrumented) | Not tested |
+| Keep screen on (Wake Lock) | Yes, whole workout | Requests/releases counted (instrumented) | Device check, 27/11/2026: screen stayed on for 1:00 with auto-lock at 30 s |
 | Offline | Yes | Tested | Not tested |
-| PWA install | Manifest and icons | n/a | Needs HTTPS deployment |
+| PWA install | Manifest and icons | n/a | Installed from the home screen (GitHub Pages); "Atualizar" applied two updates on 27/11/2026 |
 | Notifications | No | — | — |
