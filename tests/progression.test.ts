@@ -72,3 +72,46 @@ describe('double progression', () => {
     expect(r).toMatchObject({ kind: 'increase', toKg: 12, stepAboveRange: true })
   })
 })
+
+describe('double progression on assisted exercises (weight = assistance)', () => {
+  const assisted = { loadStepKg: 2.5, lowerBody: false, category: 'compound' as const, loadType: 'assisted' as const }
+
+  it('reduces assistance when every set hits the top of the range at target RIR', () => {
+    const r = suggestProgression({ prescription: presc, lastWorkingSets: [set(30, 8, 2), set(30, 8, 2)], exercise: assisted, rirTolerance: 1 })
+    expect(r).toMatchObject({ kind: 'increase', fromKg: 30, toKg: 27.5, stepKg: 2.5, reducesAssistance: true, pct: null, stepAboveRange: false, targetReps: 6 })
+  })
+
+  it('uses the most assisted set as reference, not the least', () => {
+    const hold = suggestProgression({ prescription: presc, lastWorkingSets: [set(25, 7), set(30, 7)], exercise: assisted, rirTolerance: 1 })
+    expect(hold).toMatchObject({ kind: 'hold', reason: 'buildReps', weightKg: 30 })
+    const up = suggestProgression({ prescription: presc, lastWorkingSets: [set(25, 8), set(30, 8)], exercise: assisted, rirTolerance: 1 })
+    expect(up).toMatchObject({ kind: 'increase', fromKg: 30, toKg: 27.5 })
+  })
+
+  it('never suggests negative assistance', () => {
+    const r = suggestProgression({ prescription: presc, lastWorkingSets: [set(1.5, 8), set(1.5, 8)], exercise: assisted, rirTolerance: 1 })
+    expect(r).toMatchObject({ kind: 'increase', fromKg: 1.5, toKg: 0, stepKg: 1.5 })
+  })
+
+  it('holds with a dedicated reason once no assistance is left', () => {
+    const r = suggestProgression({ prescription: presc, lastWorkingSets: [set(0, 8), set(0, 8)], exercise: assisted, rirTolerance: 1 })
+    expect(r).toMatchObject({ kind: 'hold', reason: 'noAssistanceLeft', weightKg: 0 })
+  })
+
+  it('keeps the hold rules (RIR, technique) unchanged', () => {
+    const rir = suggestProgression({ prescription: presc, lastWorkingSets: [set(30, 8, 2), set(30, 8, 0)], exercise: assisted, rirTolerance: 1 })
+    expect(rir).toMatchObject({ kind: 'hold', reason: 'rirBelowTarget', weightKg: 30 })
+    const form = suggestProgression({
+      prescription: presc,
+      lastWorkingSets: [set(30, 8), set(30, 8, 2, { formIssue: true })],
+      exercise: assisted,
+      rirTolerance: 1,
+    })
+    expect(form).toMatchObject({ kind: 'hold', reason: 'formIssue' })
+  })
+
+  it('leaves external exercises adding load', () => {
+    const r = suggestProgression({ prescription: presc, lastWorkingSets: [set(30, 8), set(30, 8)], exercise: { ...upper, loadType: 'external' }, rirTolerance: 1 })
+    expect(r).toMatchObject({ kind: 'increase', toKg: 32, reducesAssistance: false })
+  })
+})
