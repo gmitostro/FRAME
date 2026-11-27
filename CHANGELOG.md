@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0-alpha.2 · 27/11/2026 · Device check
+
+### Added
+- "Verificação do aparelho" screen (Ajustes › Sobre › Verificar este aparelho) to validate alpha.1 on a real iPhone. Four guided checks:
+  - **Sound:** a tone right after a tap, then one 5 s later outside a tap (as at the end of a rest); the user answers whether each was heard.
+  - **Screen on:** holds a screen wake lock for 1, 2 or 5 min; fails if the screen goes off (page hidden) or the system releases the lock; a touch makes the result inconclusive.
+  - **Persistent storage:** `persisted()` before and after `persist()`, a write/read probe, usage and quota, and the first time data was seen on this device.
+  - **Return from background:** a 30 s countdown; measures time away, the countdown on return (from timestamps), whether iOS reloaded the page, the audio state on return, and whether sound works after the next tap.
+- Results are saved per run (last 20) in the `meta` table, so they travel in the backup. Each run can be copied as text or exported as JSON (`frame-device-check`).
+- Tests: 10 unit tests (`tests/deviceCheck.test.ts`) and a fifth e2e suite (`e2e/device.cjs`).
+
+### Not changed
+- Database schema, backup format, workout, timer and progression.
+
 ## 0.3.0-alpha.1 · 26/11/2026 · Data Foundation, etapa 1
 
 ### Added

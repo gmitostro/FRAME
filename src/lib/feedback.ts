@@ -88,3 +88,8 @@ export async function releaseWakeLock(): Promise<void> {
   }
   wakeLock = null
 }
+
+/** Current audio context state ("running", "suspended", "interrupted"), or null if never created. */
+export function audioState(): string | null {
+  return ctx?.state ?? null
+}
