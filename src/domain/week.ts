@@ -34,3 +34,10 @@ export function sameDay(a: number, b: number): boolean {
 export function daysUntil(fromWeekday: number, toWeekday: number): number {
   return (toWeekday - fromWeekday + 7) % 7
 }
+
+/** Same weekday and time `n` weeks later (DST-safe: calendar days, not ms). */
+export function addWeeks(ts: number, n: number): number {
+  const d = new Date(ts)
+  d.setDate(d.getDate() + 7 * n)
+  return d.getTime()
+}

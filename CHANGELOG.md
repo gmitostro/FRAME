@@ -2,8 +2,17 @@
 
 ## Unreleased
 
+### Added
+- "Volume por músculo" screen (link on Início, below the week stats): weekly direct and indirect working sets per muscle, performed this week (or a previous week) versus the active program ("ficha").
+- Priority muscles (from Ajustes) are listed first and always shown; a notice names the priorities whose program has fewer than 10 direct sets per week.
+- Direct sets are compared with the reference ≥10 sets/week [STR-02], diminishing returns above ~20 [STR-04]. Indirect sets are shown whole and kept out of the comparison until fractional counting is researched.
+- Pure domain module `domain/volume.ts` and 6 unit tests.
+
 ### Fixed
 - Double progression on assisted exercises: the suggestion now reduces the machine assistance by one equipment step (never below 0) instead of adding assistance labeled as an increase. The reference is the most assisted set. At zero assistance the app holds and suggests the bodyweight version.
+
+### Not changed
+- FRFB program, history and backup format.
 
 ## 0.3.0-alpha.2 · 27/11/2026 · Device check
 

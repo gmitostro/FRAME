@@ -12,7 +12,7 @@ Atualizado em 26/11/2026 · versão 0.3.0-alpha.1
 | 3 · Motor de treino | Concluída |
 | 4 · Cronômetro | Concluída (som e vibração não verificados no iPhone) |
 | 5 · Exercícios e histórico | Parcial: biblioteca, busca, filtros, personalizados, histórico e recordes prontos; instruções de execução e erros comuns ainda vazios |
-| 6 · Progressão e análises | Parcial: dupla progressão e sugestão de carga prontas; gráficos, volume por músculo e consistência pendentes |
+| 6 · Progressão e análises | Parcial: dupla progressão e sugestão de carga prontas; volume semanal por músculo pronto; gráficos e consistência pendentes |
 | 7 · Métodos avançados | Não iniciada |
 | 8 · Recuperação e coach adaptativo | Não iniciada |
 | 9 · Notificações | Não iniciada |
@@ -57,7 +57,7 @@ Atualizado em 26/11/2026 · versão 0.3.0-alpha.1
 ## Pendente
 
 - Instruções de execução, erros comuns e amplitude por exercício (o modelo já tem os campos; o conteúdo precisa de fonte).
-- Gráficos de progressão, volume semanal por músculo (direto e indireto), consistência e duração real versus estimada.
+- Gráficos de progressão, consistência e duração real versus estimada.
 - Calibrar o modelo de duração com as sessões reais.
 - Métodos avançados, check-in de recuperação, coach adaptativo, notificações, interface do Evidence Lab e registro de decisões no app.
 - Testes no iPhone real (instalação, cronômetro, som, tela ligada).
@@ -81,4 +81,4 @@ Ver `TESTING.md`. Resumo desta versão:
 
 1. Testar no seu iPhone: instalação, cronômetro, som, tela ligada e persistência após dias sem uso.
 2. Revisar com você as interpretações da ficha (T-003) e o volume das prioridades (bíceps e tríceps com 6 séries diretas por semana).
-3. Fase 6: gráficos e volume por músculo.
+3. Fase 6: gráficos (volume por músculo pronto, aguardando validação).
