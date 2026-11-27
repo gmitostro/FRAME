@@ -133,6 +133,7 @@ Verified in browsers, still to be confirmed on a physical iPhone:
   ```
 
   Restore validates the format, the version (it rejects newer versions) and every record's shape before touching the database, then replaces all tables in one transaction. A failed restore changes nothing.
+- **Backup reminder.** Exporting records `meta.lastBackupAt` (ms). Restoring sets it to the file's `exportedAt`, since the data then matches that file. Início shows a reminder with an "Exportar backup agora" shortcut when at least one finished workout ended after the last backup and the last backup is 7 days old or older (or there was never one); Ajustes shows the last backup date. The rule is `backupStatus()` in `src/domain/backup.ts`. Limitation: on iOS the export opens the share sheet, and the app cannot tell if it was cancelled, so the time is recorded when the file is handed over.
 
 ## Program files ("fichas")
 

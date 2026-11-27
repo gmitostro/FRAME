@@ -1,7 +1,8 @@
-import { BarChart3, Check, ChevronRight, Clock, Dumbbell, Layers, Moon, Play, TriangleAlert } from 'lucide-react'
+import { BarChart3, Check, ChevronRight, Clock, Download, Dumbbell, Layers, Moon, Play, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useActiveSession, useCompletedSessions, useExerciseMap, useNow, useProgram, useSettings } from '../../app/hooks'
+import { useActiveSession, useCompletedSessions, useExerciseMap, useLastBackupAt, useNow, useProgram, useSettings } from '../../app/hooks'
 import { Brand } from '../../components/BrandMark'
+import { backupStatus } from '../../domain/backup'
 import { sessionElapsedMs, summarize } from '../../domain/session'
 import { daysUntil, sameDay, startOfWeek, WEEK_ORDER, dateOfWeekday } from '../../domain/week'
 import type { Exercise, Settings, WorkoutTemplate } from '../../domain/types'
@@ -15,7 +16,7 @@ import {
   weekdayLong,
   weekdayOnDay,
 } from '../../i18n'
-import { exercisesLabel, templateEstimate, templateMuscles, templateSetCount, useStartWorkout } from '../shared'
+import { exercisesLabel, templateEstimate, templateMuscles, templateSetCount, useExportBackup, useStartWorkout } from '../shared'
 
 export function HomePage() {
   const program = useProgram()
@@ -26,8 +27,10 @@ export function HomePage() {
   const now = useNow(30_000)
   const start = useStartWorkout()
   const navigate = useNavigate()
+  const lastBackupAt = useLastBackupAt()
+  const exportBackup = useExportBackup()
 
-  if (!program || !settings || !exMap || active === undefined || !sessions) return null
+  if (!program || !settings || !exMap || active === undefined || !sessions || lastBackupAt === undefined) return null
 
   const today = new Date(now).getDay()
   const templates = program.templates
@@ -43,6 +46,7 @@ export function HomePage() {
   const plannedCount = scheduled.length || settings.trainingDays.length
   const weekSets = weekSessions.reduce((n, s) => n + summarize(s, now).workingSets, 0)
   const last = sessions[0]
+  const backup = backupStatus(lastBackupAt, sessions.map((s) => s.endedAt ?? s.startedAt), now)
 
   return (
     <div className="page">
@@ -88,6 +92,25 @@ export function HomePage() {
           </div>
           <p className="muted small">{t('home.restDayBody')}</p>
           {next && <p className="small">{t('home.nextWorkout', { name: next.name, day: weekdayOnDay(next.weekday) })}</p>}
+        </section>
+      )}
+
+      {!active && backup.stale && (
+        <section className="card backup-reminder" aria-label={t('settings.exportBackup')}>
+          <div className="notice warn">
+            <ShieldAlert size={16} />
+            <span>
+              {backup.daysSince === null
+                ? t('home.backupNever')
+                : t('home.backupOld', {
+                    days: backup.daysSince,
+                    unsaved: backup.unsavedSessions === 1 ? t('home.backupUnsavedOne') : t('home.backupUnsaved', { n: backup.unsavedSessions }),
+                  })}
+            </span>
+          </div>
+          <button className="btn btn-block" onClick={() => void exportBackup()}>
+            <Download size={18} /> {t('home.backupNow')}
+          </button>
         </section>
       )}
 

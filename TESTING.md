@@ -18,9 +18,9 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` needs a build first. It runs five suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary) and `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility) and `e2e/device.cjs` (device check screen). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
+`npm run e2e` needs a build first. It runs six suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary), `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility), `e2e/device.cjs` (device check screen) and `e2e/backup.cjs` (backup reminder). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 81 tests)
+## Unit and persistence tests (Vitest, 99 tests)
 
 | File | Covers |
 |---|---|
@@ -128,6 +128,15 @@ Web Audio and Wake Lock are instrumented and page visibility is simulated. It pr
 | Production build + service worker | Pass |
 | E2E timer / layout / data / device | Pass |
 | E2E smoke | Pass with the clock on a training day (Monday). On Friday to Sunday it fails at "Treino de hoje" because the suite uses the real date; this predates 0.3.0-alpha.2 |
+
+## Backup reminder e2e (`e2e/backup.cjs`)
+
+1. Fresh app: no reminder on Início; Ajustes says no backup was exported.
+2. A finished workout without any backup shows the reminder; "Exportar backup agora" downloads a valid `frame-backup` with that workout and the reminder goes away; Ajustes shows "Último backup: hoje".
+3. A backup 8 days old with workouts after it shows "Último backup há 8 dias" with the number of workouts not in it, on Início and in Ajustes.
+4. A backup 3 days old shows no reminder, even with newer workouts.
+
+The rule itself (`src/domain/backup.ts`) is unit-tested in `tests/backup-reminder.test.ts`; recording and restoring the last backup time in `tests/data.test.ts`.
 
 ## Results, 26/11/2026 (v0.3.0-alpha.1)
 

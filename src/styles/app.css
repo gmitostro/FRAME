@@ -921,6 +921,10 @@ a.list-row:active {
   color: var(--warn);
 }
 
+.warn-text {
+  color: var(--warn);
+}
+
 .notice.accent {
   background: var(--accent-soft);
   border-color: var(--accent-line);

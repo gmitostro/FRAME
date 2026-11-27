@@ -1,10 +1,12 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
+import { backupFileName, createBackup, markBackupExported } from '../data/backup'
 import { requestPersistentStorage } from '../data/db'
 import { ActiveSessionExistsError, startSession } from '../data/repo'
 import { estimateSession, type DurationEstimate } from '../domain/duration'
 import type { Exercise, MuscleGroup, Settings, WorkoutTemplate } from '../domain/types'
+import { downloadText } from '../lib/download'
 import { unlockAudio } from '../lib/feedback'
 import { t } from '../i18n'
 
@@ -55,6 +57,22 @@ export function useStartWorkout() {
 }
 
 /** Wraps a mutation with a localized error toast. */
+/** Exports the full backup file and records when it was done. */
+export function useExportBackup() {
+  const safe = useSafe()
+  const toast = useToast()
+  return useCallback(
+    () =>
+      safe(async () => {
+        const backup = await createBackup()
+        downloadText(backupFileName(), JSON.stringify(backup, null, 2))
+        await markBackupExported(Date.parse(backup.exportedAt))
+        toast.show(t('settings.exportDone'))
+      }),
+    [safe, toast],
+  )
+}
+
 export function useSafe() {
   const toast = useToast()
   return useCallback(

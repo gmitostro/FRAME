@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- Backup reminder on Início when finished workouts are not in any backup and the last one is 7+ days old (or there was never one), with an "Exportar backup agora" shortcut.
+- Ajustes › Dados shows the last backup date and how many workouts came after it.
+- The last backup time is stored in `meta.lastBackupAt`; restoring a file sets it to the file's export time. No schema or backup format change.
+- Tests: 6 new unit tests and a sixth e2e suite (`e2e/backup.cjs`).
 - "Volume por músculo" screen (link on Início, below the week stats): weekly direct and indirect working sets per muscle, performed this week (or a previous week) versus the active program ("ficha").
 - Priority muscles (from Ajustes) are listed first and always shown; a notice names the priorities whose program has fewer than 10 direct sets per week.
 - Direct sets are compared with the reference ≥10 sets/week [STR-02], diminishing returns above ~20 [STR-04]. Indirect sets are shown whole and kept out of the comparison until fractional counting is researched.

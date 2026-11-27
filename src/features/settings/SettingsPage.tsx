@@ -1,12 +1,13 @@
 import { ChevronDown, Download, FileDown, FileUp, HardDrive, RotateCcw, Share, Smartphone, Upload } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useSettings } from '../../app/hooks'
+import { useCompletedSessions, useLastBackupAt, useNow, useSettings } from '../../app/hooks'
 import { PageHeader } from '../../components/PageHeader'
 import { ConfirmSheet } from '../../components/Sheet'
 import { Stepper, Switch } from '../../components/Stepper'
 import { useToast } from '../../components/Toast'
-import { backupFileName, createBackup, restoreBackup, validateBackup, type BackupFile } from '../../data/backup'
+import { restoreBackup, validateBackup, type BackupFile } from '../../data/backup'
+import { backupStatus } from '../../domain/backup'
 import { updateSettings } from '../../data/repo'
 import { applyProgram, exportProgram, programFileName, validateProgram, type ProgramFile } from '../../data/program'
 import { FRFB_V1 } from '../../data/seed/frfb-v1'
@@ -15,8 +16,8 @@ import { useProgram } from '../../app/hooks'
 import { MUSCLE_GROUPS, REST_PROFILES, type MuscleGroup, type Settings } from '../../domain/types'
 import { WEEK_ORDER } from '../../domain/week'
 import { downloadText } from '../../lib/download'
-import { formatRest, muscleLabel, restProfileLabel, t, weekdayShort, type MessageKey } from '../../i18n'
-import { useSafe } from '../shared'
+import { formatDate, formatRest, muscleLabel, restProfileLabel, t, weekdayShort, type MessageKey } from '../../i18n'
+import { useExportBackup, useSafe } from '../shared'
 
 declare const __APP_VERSION__: string
 
@@ -31,6 +32,10 @@ export function SettingsPage() {
   const programFileRef = useRef<HTMLInputElement>(null)
   const [pendingProgram, setPendingProgram] = useState<ProgramFile | null>(null)
   const current = useProgram()
+  const exportBackup = useExportBackup()
+  const lastBackupAt = useLastBackupAt()
+  const sessions = useCompletedSessions()
+  const now = useNow(60_000)
 
   useEffect(() => {
     navigator.storage?.persisted?.().then(setPersisted, () => setPersisted(null))
@@ -48,14 +53,6 @@ export function SettingsPage() {
     const list = settings.priorities[tier]
     const next = list.includes(m) ? list.filter((x) => x !== m) : [...list, m]
     void save({ priorities: { ...settings.priorities, [tier]: next, [other]: settings.priorities[other].filter((x) => x !== m) } })
-  }
-
-  async function exportBackup() {
-    await safe(async () => {
-      const backup = await createBackup()
-      downloadText(backupFileName(), JSON.stringify(backup, null, 2))
-      toast.show(t('settings.exportDone'))
-    })
   }
 
   async function exportCurrentProgram() {
@@ -230,6 +227,7 @@ export function SettingsPage() {
           <Download size={18} /> {t('settings.exportBackup')}
         </button>
         <span className="field-note">{t('settings.exportBackupNote')}</span>
+        {lastBackupAt !== undefined && sessions && <LastBackup lastBackupAt={lastBackupAt} sessionEndTimes={sessions.map((s) => s.endedAt ?? s.startedAt)} now={now} />}
         <button className="btn btn-block" onClick={() => fileRef.current?.click()}>
           <Upload size={18} /> {t('settings.restoreBackup')}
         </button>
@@ -289,6 +287,21 @@ export function SettingsPage() {
       />
     </div>
   )
+}
+
+function LastBackup({ lastBackupAt, sessionEndTimes, now }: { lastBackupAt: number | null; sessionEndTimes: number[]; now: number }) {
+  const st = backupStatus(lastBackupAt, sessionEndTimes, now)
+  if (st.lastBackupAt === null) return <span className={`small ${st.stale ? 'warn-text' : 'muted'}`}>{t('settings.lastBackupNever')}</span>
+  const date = formatDate(st.lastBackupAt)
+  const when =
+    st.daysSince === 0
+      ? t('settings.lastBackupToday', { date })
+      : st.daysSince === 1
+        ? t('settings.lastBackupYesterday', { date })
+        : t('settings.lastBackupDays', { date, days: st.daysSince ?? 0 })
+  const unsaved =
+    st.unsavedSessions === 0 ? '' : st.unsavedSessions === 1 ? t('settings.lastBackupUnsavedOne') : t('settings.lastBackupUnsaved', { n: st.unsavedSessions })
+  return <span className={`small ${st.stale ? 'warn-text' : 'muted'}`}>{unsaved ? `${when} ${unsaved}` : when}</span>
 }
 
 function Group({ title, children }: { title: string; children: ReactNode }) {

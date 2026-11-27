@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '../data/db'
+import { getLastBackupAt } from '../data/backup'
 import { getActiveProgram, listTemplates } from '../data/repo'
 import { withSettingsDefaults } from '../domain/defaults'
 import type { Exercise, Settings } from '../domain/types'
@@ -30,6 +31,11 @@ export function useProgram() {
     if (!program) return { program: null, templates: [] }
     return { program, templates: await listTemplates(program.id) }
   }, [])
+}
+
+/** Time of the last backup export; null = never; undefined = loading. */
+export function useLastBackupAt(): number | null | undefined {
+  return useLiveQuery(() => getLastBackupAt(), [])
 }
 
 export function useCompletedSessions() {
