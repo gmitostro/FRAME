@@ -1,5 +1,6 @@
-import { ChevronDown, Download, FileDown, FileUp, HardDrive, RotateCcw, Share, Upload } from 'lucide-react'
+import { ChevronDown, Download, FileDown, FileUp, HardDrive, RotateCcw, Share, Smartphone, Upload } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useCompletedSessions, useLastBackupAt, useNow, useSettings } from '../../app/hooks'
 import { PageHeader } from '../../components/PageHeader'
 import { ConfirmSheet } from '../../components/Sheet'
@@ -241,6 +242,10 @@ export function SettingsPage() {
       </Group>
 
       <Group title={t('settings.about')}>
+        <Link className="btn btn-block" to="/ajustes/verificacao">
+          <Smartphone size={18} /> {t('settings.deviceCheck')}
+        </Link>
+        <span className="field-note">{t('settings.deviceCheckNote')}</span>
         <div className="notice">
           <Share size={16} />
           <span>

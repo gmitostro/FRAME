@@ -18,9 +18,9 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` needs a build first. It runs five suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary) `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility) and `e2e/backup.cjs` (backup reminder). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
+`npm run e2e` needs a build first. It runs six suites: `e2e/smoke.cjs` (full flow), `e2e/timer.cjs` (rest timer reliability), `e2e/layout.cjs` (four screen sizes and the summary), `e2e/data.cjs` (v0.3 data capture and pre-v0.3 compatibility), `e2e/device.cjs` (device check screen) and `e2e/backup.cjs` (backup reminder). `SHOTS=1 node e2e/smoke.cjs` saves screenshots to `e2e/shots/`.
 
-## Unit and persistence tests (Vitest, 71 tests)
+## Unit and persistence tests (Vitest, 87 tests)
 
 | File | Covers |
 |---|---|
@@ -31,6 +31,7 @@ npm run e2e
 | `tests/session.test.ts` | "Reiniciar" while the workout is paused (stays paused, resumes with the workout), Workout pause vs. a manually paused timer, logging a set while paused, recorded rest excluding pauses and legacy sets, set edit and delete (timer cleared), records of the day |
 | `tests/prefill.test.ts` | Warm-up vs working order, history warm-ups, suggested load, repeat of the session's last set, no-history fallback |
 | `tests/program.test.ts` | FRFB V1 validates against the library, weekly direct sets match the ficha's summary, estimated durations, invalid ficha rejection, import replaces workouts without touching history, export/import round-trip with custom exercises |
+| `tests/deviceCheck.test.ts` | Device check status rules (sound, screen, storage, background, overall), iOS version from the user agent, text summary, reports newest first and capped at 20, storage probe keeps the first-seen time, reports travel in the backup |
 | `tests/data.test.ts` | Database seed (library, FRFB V1, settings), seed sync preserving user edits, template editing with clamping, live-session persistence across a new DB connection (reload), a second active session blocked, history snapshot unaffected by template edits, substitution in place and after logged sets, pause excluded from workout time and rest, backup round-trip and rejection of invalid/newer files |
 
 Persistence tests run against `fake-indexeddb`, a spec-compliant in-memory IndexedDB.
@@ -105,6 +106,28 @@ On the mini, the 13 and the Pro Max it dropped from 151 px, 99 px and 0 px to 0 
 
 Backup compatibility is also unit-tested in `tests/data.test.ts` (round-trip of the new fields and restore of a pre-v0.3 backup).
 
+## Device check e2e (`e2e/device.cjs`, 0.3.0-alpha.2)
+
+Web Audio and Wake Lock are instrumented and page visibility is simulated. It proves the screen measures and records correctly, not that an iPhone passes; that is what the screen is for.
+
+1. Opens from Ajustes with four checks and the device info (browser tab reported as not installed).
+2. Storage: write/read ok, persisted state, first-seen date.
+3. Sound: tone after a tap; delayed tone at 5 s, not before; answers recorded (heard + not heard = Atenção).
+4. Screen on: 1:00 without touch = OK and lock released; page hidden = Falhou; lock released while visible = Falhou.
+5. Background: 40 s away, "terminou há 0:10", sound after return = OK; under 10 s asks to redo; a page reload during the test is detected = Atenção.
+6. Results survive a reload; JSON export; text summary copied; a new run starts pending and lists the previous one.
+7. No console errors.
+
+## Results, 27/11/2026 (v0.3.0-alpha.2)
+
+| Check | Result |
+|---|---|
+| TypeScript (`tsc -b`, strict) | Pass, 0 errors |
+| Lint (oxlint) | Pass, 0 errors; 2 dev-only fast-refresh warnings |
+| Unit and persistence | 81/81 pass |
+| Production build + service worker | Pass |
+| E2E timer / layout / data / device | Pass |
+| E2E smoke | Pass with the clock on a training day (Monday). On Friday to Sunday it fails at "Treino de hoje" because the suite uses the real date; this predates 0.3.0-alpha.2 |
 
 ## Backup reminder e2e (`e2e/backup.cjs`)
 

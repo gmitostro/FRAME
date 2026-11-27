@@ -1,7 +1,7 @@
 {
   "name": "frame",
   "private": true,
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "e2e": "node e2e/smoke.cjs && node e2e/timer.cjs && node e2e/layout.cjs && node e2e/data.cjs && node e2e/backup.cjs",
+    "e2e": "node e2e/smoke.cjs && node e2e/timer.cjs && node e2e/layout.cjs && node e2e/data.cjs && node e2e/device.cjs && node e2e/backup.cjs",
     "icons": "node scripts/make-icons.cjs"
   },
   "dependencies": {
